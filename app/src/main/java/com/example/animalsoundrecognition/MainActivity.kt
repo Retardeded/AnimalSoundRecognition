@@ -40,6 +40,8 @@ class MainActivity : AppCompatActivity() {
     //.baseUrl("http://192.168.1.3:8080/")
     private lateinit var textTest:TextView
     private lateinit var buttonTest:Button
+    var currentRecord:MutableList<DataPoint> = mutableListOf()
+    var soundStartingTime:Long = 0
 
 
     private var mAudioRecord: AudioRecord? = null
@@ -136,16 +138,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun postSound(sound: DataSound) {
-
-        Log.d("ss", sound.toString())
-
         val call = service.postSound(sound)
         call.enqueue(object : Callback<DataSound> {
             override fun onResponse(call: Call<DataSound>, response: Response<DataSound>) {
                 if (response.code() == 200) {
                     //
                     textTest.text = response.toString()
-
                     val dataSound = response.body()!!
                     val stringBuilder = dataSound.toString();
                     textTest.text = stringBuilder
@@ -223,15 +221,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startRecording() {
+
         mAudioRecord = AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT, mMinBufferSize)
         mAudioRecord!!.startRecording()
         isRecording = true
 
         mRecordThread = Thread(Runnable { updateGraphView() })
         mRecordThread!!.start()
+        soundStartingTime = System.currentTimeMillis()
     }
 
     private fun stopRecording() {
+        val duration = System.currentTimeMillis() - soundStartingTime
         if (mAudioRecord != null) {
             if (isRecording) {
                 mAudioRecord?.stop()
@@ -241,6 +242,10 @@ class MainActivity : AppCompatActivity() {
             mAudioRecord?.release()
             mAudioRecord = null
             mBaseSeries?.resetData(arrayOf<DataPoint>())
+
+            val dataSound = DataSound("Moj dzwiek", duration, currentRecord,)
+            postSound(dataSound)
+            currentRecord.clear()
         }
     }
 
@@ -285,9 +290,8 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                val dataSound = DataSound("Example2", data.asList() as List<DataPoint>)
-                postSound(dataSound)
-
+                val list: List<DataPoint> = data.toList().filterNotNull()
+                currentRecord.addAll(list)
 
                 this@MainActivity.runOnUiThread { mBaseSeries!!.resetData(data) }
             }
