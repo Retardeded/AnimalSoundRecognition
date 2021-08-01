@@ -11,10 +11,25 @@
         app:showAsAction="ifRoom"
         android:enabled="false"
         android:visible="false" />
+    <item android:id="@+id/device_access_audio_play"
+        android:title="@string/device_access_mic_recorded"
+        app:showAsAction="ifRoom"
+        android:enabled="false"
+        android:visible="false" />
+    <item android:id="@+id/device_access_audio_stop"
+        android:title="@string/device_access_audio_stop"
+        app:showAsAction="ifRoom"
+        android:enabled="false"
+        android:visible="false" />
+    <item android:id="@+id/check_sound"
+        android:title="@string/check_sound"
+        app:showAsAction="ifRoom"
+        android:enabled="true"
+        android:visible="true" />
     <item android:id="@+id/action_settings"
-        android:title="@string/action_settings"
-        app:showAsAction="ifRoom" />
-    <item android:id="@+id/privacy_policy"
-        android:title="@string/privacy_policy"
-        app:showAsAction="ifRoom" />
+    android:title="@string/action_settings"
+    app:showAsAction="ifRoom"
+    android:enabled="true"
+    android:visible="true" />
+
 </menu>

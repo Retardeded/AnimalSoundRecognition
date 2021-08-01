@@ -52,4 +52,7 @@
         </p>
         ]]>
     </string>
+    <string name="device_access_mic_recorded">Play Sound</string>
+    <string name="check_sound">Check Sound</string>
+    <string name="device_access_audio_stop">Stop Playing</string>
 </resources>

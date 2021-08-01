@@ -1,18 +1,16 @@
 package com.example.animalsoundrecognition
 
-import android.media.AudioFormat
-import android.media.AudioRecord
-import android.media.MediaRecorder
+import android.media.*
+import android.media.AudioTrack
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import ca.uol.aig.fftpack.RealDoubleFFT
+import com.example.animalsoundrecognition.model.DataGraph
 import com.example.animalsoundrecognition.model.DataSound
-import com.example.animalsoundrecognition.model.Quiz
 import com.jjoe64.graphview.GraphView
 import com.jjoe64.graphview.series.BarGraphSeries
 import com.jjoe64.graphview.series.BaseSeries
@@ -23,6 +21,9 @@ import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.io.FileNotFoundException
+import java.io.FileOutputStream
+import java.io.IOException
 
 
 const val SAMPLE_RATE = 44100
@@ -39,18 +40,23 @@ class MainActivity : AppCompatActivity() {
     //.baseUrl("http://10.0.0.5:8080/")
     //.baseUrl("http://192.168.1.3:8080/")
     private lateinit var textTest:TextView
-    private lateinit var buttonTest:Button
-    var currentRecord:MutableList<DataPoint> = mutableListOf()
+    var currentRecord:MutableList<DataGraph> = mutableListOf()
     var soundStartingTime:Long = 0
+    var currentDuration:Long = 0
 
+    private var fileName: String = ""
+    var os: FileOutputStream? = null
 
     private var mAudioRecord: AudioRecord? = null
+    private var recorder: MediaRecorder? = null
+    private var mMediaPlayer: MediaPlayer? = null
     private var mRecordThread: Thread? = null
     private var mBaseSeries: BaseSeries<DataPoint>? = null
 
     private var mMinBufferSize = 0
     private var isRecording = false
-    private var isBarGraph = true
+    private var isPlaying = false
+    private var isBarGraph = false
 
     private var transformer: RealDoubleFFT? = null
 
@@ -61,16 +67,14 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         textTest = findViewById(R.id.textTest)
-        buttonTest = findViewById(R.id.buttonTest)
         graph = findViewById(R.id.graph)
         mMinBufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
 
         textTest.text = "DEFAULT"
 
+        fileName = "${externalCacheDir?.absolutePath}/audiorecordtest.3gp"
+
         createClient()
-        buttonTest.setOnClickListener{
-            postQuiz()
-        }
     }
 
     fun createClient() {
@@ -80,8 +84,9 @@ class MainActivity : AppCompatActivity() {
             .build()
 
         service = retrofit.create(SoundService::class.java)
-        getQuizzes()
+        //getQuizzes()
     }
+    /*
 
     fun getQuizzes() {
         val call = service.getQuizzes()
@@ -137,7 +142,11 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    fun postSound(sound: DataSound) {
+     */
+
+    fun postSound() {
+        val sound = DataSound("My sound", currentDuration, currentRecord)
+        //postSound(dataSound)
         val call = service.postSound(sound)
         call.enqueue(object : Callback<DataSound> {
             override fun onResponse(call: Call<DataSound>, response: Response<DataSound>) {
@@ -149,7 +158,7 @@ class MainActivity : AppCompatActivity() {
                     textTest.text = stringBuilder
 
                 } else
-                    textTest.text = "cOS zle"
+                    textTest.text = "something wrong"
             }
 
             override fun onFailure(call: Call<DataSound>, t: Throwable) {
@@ -188,6 +197,20 @@ class MainActivity : AppCompatActivity() {
                 invalidateOptionsMenu()
                 return true
             }
+            R.id.device_access_audio_play -> {
+                startPlaying()
+                invalidateOptionsMenu()
+                return true
+            }
+            R.id.device_access_audio_stop -> {
+                stopPlaying()
+                invalidateOptionsMenu()
+                return true
+            }
+            R.id.check_sound -> {
+                postSound()
+                return true
+            }
             R.id.action_settings -> {
                 initGraphView()
                 return true
@@ -199,14 +222,26 @@ class MainActivity : AppCompatActivity() {
     override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
         val item1: MenuItem?
         val item2: MenuItem?
+        val item3: MenuItem?
+        val item4: MenuItem?
 
-        if (mAudioRecord == null) {
+        if (!isRecording) {
             item1 = menu?.findItem(R.id.device_access_mic_muted)
             item2 = menu?.findItem(R.id.device_access_mic)
         } else {
             item1 = menu?.findItem(R.id.device_access_mic)
             item2 = menu?.findItem(R.id.device_access_mic_muted)
         }
+
+        if(!isPlaying) {
+            item3 = menu?.findItem(R.id.device_access_audio_stop)
+            item4 = menu?.findItem(R.id.device_access_audio_play)
+        } else {
+            item3 = menu?.findItem(R.id.device_access_audio_play)
+            item4 = menu?.findItem(R.id.device_access_audio_stop)
+        }
+
+
 
         if (item1 != null) {
             item1.isEnabled = false
@@ -217,14 +252,78 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        if (item3 != null) {
+            item3.isEnabled = false
+            item3.isVisible = false
+            if (item4 != null) {
+                item4.isEnabled = true
+                item4.isVisible = true
+            }
+        }
+
         return super.onPrepareOptionsMenu(menu)
     }
 
-    private fun startRecording() {
+    private fun startPlaying() {
+
+        val sound = DataSound("My sound", currentDuration, currentRecord)
+        val stringBuilder = sound.toString();
+        textTest.text = stringBuilder
+
+
+        mMediaPlayer = MediaPlayer().apply {
+            try {
+                setDataSource(fileName)
+                prepare()
+                start()
+            } catch (e: IOException) {
+                Log.e("", "prepare() failed")
+            }
+        }
+        isPlaying = true
 
         mAudioRecord = AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT, mMinBufferSize)
         mAudioRecord!!.startRecording()
+
+        mRecordThread = Thread(Runnable { replayGraphView() })
+        mRecordThread!!.start()
+    }
+
+    private fun stopPlaying() {
+        mMediaPlayer?.release()
+        mMediaPlayer = null
+        isPlaying = false
+
+        mRecordThread = null
+        mAudioRecord?.stop()
+        mRecordThread = null
+        mAudioRecord?.release()
+        mAudioRecord = null
+        mBaseSeries?.resetData(arrayOf<DataPoint>())
+    }
+
+
+    private fun startRecording() {
+
+        currentRecord.clear()
+        mAudioRecord = AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT, mMinBufferSize)
+        mAudioRecord!!.startRecording()
         isRecording = true
+
+        recorder = MediaRecorder().apply {
+            setAudioSource(MediaRecorder.AudioSource.MIC)
+            setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+            setOutputFile(fileName)
+            setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+
+            try {
+                prepare()
+            } catch (e: IOException) {
+                Log.e("tag", "prepare() failed")
+            }
+
+            start()
+        }
 
         mRecordThread = Thread(Runnable { updateGraphView() })
         mRecordThread!!.start()
@@ -232,7 +331,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun stopRecording() {
-        val duration = System.currentTimeMillis() - soundStartingTime
+        currentDuration = System.currentTimeMillis() - soundStartingTime
         if (mAudioRecord != null) {
             if (isRecording) {
                 mAudioRecord?.stop()
@@ -242,11 +341,13 @@ class MainActivity : AppCompatActivity() {
             mAudioRecord?.release()
             mAudioRecord = null
             mBaseSeries?.resetData(arrayOf<DataPoint>())
-
-            val dataSound = DataSound("Moj dzwiek", duration, currentRecord,)
-            postSound(dataSound)
-            currentRecord.clear()
         }
+
+        recorder?.apply {
+            stop()
+            release()
+        }
+        recorder = null
     }
 
     private fun initGraphView() {
@@ -266,12 +367,37 @@ class MainActivity : AppCompatActivity() {
         graph.addSeries(mBaseSeries)
     }
 
+    private fun replayGraphView() {
+        var index = 0
+        val audioData = ShortArray(mMinBufferSize)
+        while (isPlaying && index < currentRecord.size) {
+                val read = mAudioRecord!!.read(audioData, 0, mMinBufferSize)
+                if (read != AudioRecord.ERROR_INVALID_OPERATION && read != AudioRecord.ERROR_BAD_VALUE) {
+                val num =  currentRecord[index].dataPoints.size
+                //os?.write(audioData, 0, mMinBufferSize);
+                val data = arrayOfNulls<DataPoint>(num)
+                if (isBarGraph) {
+                    for (i in 0 until num) {
+                        data[i] = currentRecord[index].dataPoints[i]
+                    }
+                } else {
+                    for (i in 0 until num) {
+                        data[i] = currentRecord[index].dataPoints[i]
+                    }
+                }
+                this@MainActivity.runOnUiThread { mBaseSeries!!.resetData(data) }
+                }
+            index++
+        }
+    }
+
     private fun updateGraphView() {
         val audioData = ShortArray(mMinBufferSize)
         while (isRecording) {
             val read = mAudioRecord!!.read(audioData, 0, mMinBufferSize)
             if (read != AudioRecord.ERROR_INVALID_OPERATION && read != AudioRecord.ERROR_BAD_VALUE) {
                 val num = audioData.size
+                //os?.write(audioData, 0, mMinBufferSize);
                 val data = arrayOfNulls<DataPoint>(num)
                 if (isBarGraph) {
                     // apply Fast Fourier Transform here
@@ -291,11 +417,12 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 val list: List<DataPoint> = data.toList().filterNotNull()
-                currentRecord.addAll(list)
+                currentRecord.add(DataGraph(list))
 
                 this@MainActivity.runOnUiThread { mBaseSeries!!.resetData(data) }
             }
 
         }
     }
+
 }

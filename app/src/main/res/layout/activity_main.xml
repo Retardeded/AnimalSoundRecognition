@@ -9,22 +9,12 @@ android:gravity="center"
 android:orientation="vertical"
 tools:context=".MainActivity">
 
-<Button
-    android:id="@+id/buttonTest"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:text="Add quiz"
-    android:gravity="center"
-    android:layout_marginBottom="30dp"
-    android:textSize="25sp"
-    android:textStyle="bold"
-    />
 
 <TextView
     android:id="@+id/textTest"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:text="Wiki Search Quiz"
+    android:text=""
     android:gravity="center"
     android:layout_marginBottom="30dp"
     android:textSize="25sp"
