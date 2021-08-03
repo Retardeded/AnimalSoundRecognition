@@ -21,8 +21,13 @@
         app:showAsAction="ifRoom"
         android:enabled="false"
         android:visible="false" />
+    <item android:id="@+id/upload_sound"
+        android:title="@string/upload_new_animal"
+        app:showAsAction="ifRoom"
+        android:enabled="true"
+        android:visible="true" />
     <item android:id="@+id/check_sound"
-        android:title="@string/check_sound"
+        android:title="@string/check_animal"
         app:showAsAction="ifRoom"
         android:enabled="true"
         android:visible="true" />

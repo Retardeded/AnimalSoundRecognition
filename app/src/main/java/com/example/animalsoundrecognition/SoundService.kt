@@ -13,6 +13,9 @@ interface SoundService {
     @GET("api/quizzes")
     fun getQuizzes(): Call<List<Quiz>>
 
+    @GET("api/sounds")
+    fun getSounds(): Call<List<DataSound>>
+
     //@POST("api/quizzes")
     //fun postQuiz(): Call<Quiz>
 
@@ -23,6 +26,10 @@ interface SoundService {
     @Headers("Content-Type: application/json")
     @POST("api/sounds")
     fun postSound(@Body sound: DataSound): Call<DataSound>
+
+    @Headers("Content-Type: application/json")
+    @POST("api/sounds")
+    fun checkSound(@Body sound: DataSound): Call<List<Pair<DataSound, Double>>>
 
     //@POST("api/quizzes")
     //fun postQuiz(quiz: Quiz): Call<Quiz>

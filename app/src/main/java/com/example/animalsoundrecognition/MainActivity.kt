@@ -1,11 +1,11 @@
 package com.example.animalsoundrecognition
 
 import android.media.*
-import android.media.AudioTrack
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.EditText
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import ca.uol.aig.fftpack.RealDoubleFFT
@@ -21,7 +21,6 @@ import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
 
@@ -40,6 +39,7 @@ class MainActivity : AppCompatActivity() {
     //.baseUrl("http://10.0.0.5:8080/")
     //.baseUrl("http://192.168.1.3:8080/")
     private lateinit var textTest:TextView
+    private lateinit var animalNameText:EditText
     var currentRecord:MutableList<DataGraph> = mutableListOf()
     var soundStartingTime:Long = 0
     var currentDuration:Long = 0
@@ -51,6 +51,9 @@ class MainActivity : AppCompatActivity() {
     private var recorder: MediaRecorder? = null
     private var mMediaPlayer: MediaPlayer? = null
     private var mRecordThread: Thread? = null
+    private var mPostThread: Thread? = null
+    private var mUploadThread: Thread? = null
+    private var mGetThread: Thread? = null
     private var mBaseSeries: BaseSeries<DataPoint>? = null
 
     private var mMinBufferSize = 0
@@ -66,6 +69,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        animalNameText = findViewById(R.id.textAnimalName)
         textTest = findViewById(R.id.textTest)
         graph = findViewById(R.id.graph)
         mMinBufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
@@ -73,7 +77,6 @@ class MainActivity : AppCompatActivity() {
         textTest.text = "DEFAULT"
 
         fileName = "${externalCacheDir?.absolutePath}/audiorecordtest.3gp"
-
         createClient()
     }
 
@@ -84,28 +87,31 @@ class MainActivity : AppCompatActivity() {
             .build()
 
         service = retrofit.create(SoundService::class.java)
-        //getQuizzes()
+        getSounds()
     }
-    /*
+    fun getSounds() {
+        mUploadThread = Thread(Runnable {getSoundCall()})
+        mUploadThread!!.start()
+    }
 
-    fun getQuizzes() {
-        val call = service.getQuizzes()
-        call.enqueue(object : Callback<List<Quiz>> {
-            override fun onResponse(call: Call<List<Quiz>>, response: Response<List<Quiz>>) {
+    fun getSoundCall() {
+        val call = service.getSounds()
+        call.enqueue(object : Callback<List<DataSound>> {
+            override fun onResponse(call: Call<List<DataSound>>, response: Response<List<DataSound>>) {
                 if (response.code() == 200) {
                     //
                     textTest.text = response.toString()
 
                     val quiz = response.body()!!
 
-                    val stringBuilder = quiz[1].toString();
+                    val stringBuilder = quiz.toString();
 
                     textTest.text = stringBuilder
 
                 } else
-                textTest.text = "cOS zle"
+                    textTest.text = "cOS zle"
             }
-            override fun onFailure(call: Call<List<Quiz>>, t: Throwable) {
+            override fun onFailure(call: Call<List<DataSound>>, t: Throwable) {
                 //
                 val text = "MSG:" + t.message + "CAUSE: " + t.cause
                 //textTest.text = "FAIL"
@@ -114,39 +120,13 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    fun postQuiz() {
-
-        val quiz:Quiz = Quiz("My Question","What to do?", listOf("Try","Catch","Cook", "Sleep"), listOf(1,2))
-        Log.d("ss", quiz.toString())
-
-        val call = service.postQuiz(quiz)
-        call.enqueue(object : Callback<Quiz> {
-            override fun onResponse(call: Call<Quiz>, response: Response<Quiz>) {
-                if (response.code() == 200) {
-                    //
-                    textTest.text = response.toString()
-
-                    val quiz = response.body()!!
-                    val stringBuilder = quiz.toString();
-                    textTest.text = stringBuilder
-
-                } else
-                textTest.text = "cOS zle"
-            }
-
-            override fun onFailure(call: Call<Quiz>, t: Throwable) {
-                val text = "MSG:" + t.message + "CAUSE: " + t.cause
-                //textTest.text = "FAIL"
-                textTest.text = text
-            }
-        })
+    fun uploadSound() {
+        mGetThread = Thread(Runnable {postSound()})
+        mGetThread!!.start()
     }
 
-     */
-
-    fun postSound() {
-        val sound = DataSound("My sound", currentDuration, currentRecord)
-        //postSound(dataSound)
+    private fun postSound() {
+        val sound = createDataSound()
         val call = service.postSound(sound)
         call.enqueue(object : Callback<DataSound> {
             override fun onResponse(call: Call<DataSound>, response: Response<DataSound>) {
@@ -162,6 +142,35 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onFailure(call: Call<DataSound>, t: Throwable) {
+                val text = "MSG:" + t.message + "CAUSE: " + t.cause
+                //textTest.text = "FAIL"
+                textTest.text = text
+            }
+        })
+    }
+
+    fun checkSound() {
+        mPostThread = Thread(Runnable {checkSoundCall()})
+        mPostThread!!.start()
+    }
+
+    private fun checkSoundCall() {
+        val sound = createDataSound()
+        val call = service.checkSound(sound)
+        call.enqueue(object : Callback<List<Pair<DataSound, Double>>>{
+            override fun onResponse(call: Call<List<Pair<DataSound, Double>>>, response: Response<List<Pair<DataSound, Double>>>) {
+                if (response.code() == 200) {
+                    //
+                    textTest.text = response.toString()
+                    val dataSound = response.body()!!
+                    val stringBuilder = dataSound.toString();
+                    textTest.text = stringBuilder
+
+                } else
+                    textTest.text = "something wrong"
+            }
+
+            override fun onFailure(call: Call<List<Pair<DataSound, Double>>>, t: Throwable) {
                 val text = "MSG:" + t.message + "CAUSE: " + t.cause
                 //textTest.text = "FAIL"
                 textTest.text = text
@@ -207,8 +216,12 @@ class MainActivity : AppCompatActivity() {
                 invalidateOptionsMenu()
                 return true
             }
+            R.id.upload_sound -> {
+                uploadSound()
+                return true
+            }
             R.id.check_sound -> {
-                postSound()
+                checkSound()
                 return true
             }
             R.id.action_settings -> {
@@ -266,7 +279,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun startPlaying() {
 
-        val sound = DataSound("My sound", currentDuration, currentRecord)
+        val sound = createDataSound()
         val stringBuilder = sound.toString();
         textTest.text = stringBuilder
 
@@ -287,6 +300,15 @@ class MainActivity : AppCompatActivity() {
 
         mRecordThread = Thread(Runnable { replayGraphView() })
         mRecordThread!!.start()
+    }
+
+    private fun createDataSound(): DataSound {
+        val dataPoints: MutableList<DataPoint> = mutableListOf()
+        for (graphs in currentRecord) {
+            dataPoints.addAll(graphs.dataPoints)
+        }
+        val sound = DataSound(animalNameText.text.toString(), currentDuration, dataPoints)
+        return sound
     }
 
     private fun stopPlaying() {
