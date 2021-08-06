@@ -7,6 +7,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.widget.EditText
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import ca.uol.aig.fftpack.RealDoubleFFT
 import com.example.animalsoundrecognition.model.DataGraph
@@ -87,14 +88,13 @@ class MainActivity : AppCompatActivity() {
             .build()
 
         service = retrofit.create(SoundService::class.java)
-        getSounds()
     }
     fun getSounds() {
-        mUploadThread = Thread(Runnable {getSoundCall()})
-        mUploadThread!!.start()
+        mGetThread = Thread(Runnable {getSoundsCall()})
+        mGetThread!!.start()
     }
 
-    fun getSoundCall() {
+    fun getSoundsCall() {
         val call = service.getSounds()
         call.enqueue(object : Callback<List<DataSound>> {
             override fun onResponse(call: Call<List<DataSound>>, response: Response<List<DataSound>>) {
@@ -103,9 +103,7 @@ class MainActivity : AppCompatActivity() {
                     textTest.text = response.toString()
 
                     val quiz = response.body()!!
-
                     val stringBuilder = quiz.toString();
-
                     textTest.text = stringBuilder
 
                 } else
@@ -120,9 +118,41 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    fun uploadSound() {
-        mGetThread = Thread(Runnable {postSound()})
+    fun getSound() {
+        mGetThread = Thread(Runnable {getSoundCall()})
         mGetThread!!.start()
+    }
+
+    fun getSoundCall() {
+        val id = animalNameText.text.toString()
+        val call = service.getSound(id)
+        call.enqueue(object : Callback<DataSound> {
+            override fun onResponse(call: Call<DataSound>, response: Response<DataSound>) {
+                if (response.code() == 200) {
+                    //
+                    textTest.text = response.toString()
+
+                    val quiz = response.body()!!
+                    val stringBuilder = quiz.toString();
+                    textTest.text = stringBuilder
+
+                } else {
+                    textTest.text = "cOS zle"
+                    //textTest.text = response.message()
+                }
+            }
+            override fun onFailure(call: Call<DataSound>, t: Throwable) {
+                //
+                val text = "MSG:" + t.message + "CAUSE: " + t.cause
+                //textTest.text = "FAIL"
+                textTest.text = text
+            }
+        })
+    }
+
+    fun uploadSound() {
+        mUploadThread = Thread(Runnable {postSound()})
+        mUploadThread!!.start()
     }
 
     private fun postSound() {
@@ -222,6 +252,14 @@ class MainActivity : AppCompatActivity() {
             }
             R.id.check_sound -> {
                 checkSound()
+                return true
+            }
+            R.id.get_sound_types -> {
+                getSounds()
+                return true
+            }
+            R.id.get_sound -> {
+                getSound()
                 return true
             }
             R.id.action_settings -> {

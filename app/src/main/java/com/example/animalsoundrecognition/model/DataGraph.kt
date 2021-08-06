@@ -6,6 +6,6 @@ class DataGraph(dataPoints:List<DataPoint>) {
     val dataPoints: List<DataPoint> = dataPoints
 
     override fun toString(): String {
-        return "Graph(dataPoints=${dataPoints.take(10)})"
+        return "Graph(dataPoints=${dataPoints.take(2)})"
     }
 }

@@ -8,6 +8,6 @@ class DataSound(title:String, durationMillis:Long, dataPoints:List<DataPoint>) {
     private val durationMillis: Long? = durationMillis
     private val dataPoints: List<DataPoint> = dataPoints
     override fun toString(): String {
-        return "Sound(id=$id, title=$title, durationMilis=$durationMillis, dataPoints=${dataPoints.take(2)})"
+        return "Sound(id=$id, title=$title, durationMilis=$durationMillis), data=${dataPoints.take(2)}\n"
     }
 }
