@@ -1,44 +1,51 @@
-<?xml version="1.0" encoding="utf-8"?>
-
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-xmlns:app="http://schemas.android.com/apk/res-auto"
-xmlns:tools="http://schemas.android.com/tools"
-android:layout_width="match_parent"
-android:layout_height="match_parent"
-android:gravity="center"
-android:orientation="vertical"
-tools:context=".MainActivity">
-
-<Button
-    android:id="@+id/buttonTest"
-    android:layout_width="wrap_content"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
     android:layout_height="wrap_content"
-    android:text="Add quiz"
-    android:gravity="center"
-    android:layout_marginBottom="30dp"
-    android:textSize="25sp"
-    android:textStyle="bold"
-    />
+    android:orientation="vertical"
+    android:padding="10dp"
+    android:fillViewport="false"
+    android:gravity="center">
 
-<TextView
-    android:id="@+id/textTest"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:text="Wiki Search Quiz"
-    android:gravity="center"
-    android:layout_marginBottom="30dp"
-    android:textSize="25sp"
-    android:textStyle="bold"
-    android:textColor="@android:color/black"
-    />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        >
 
-    <com.jjoe64.graphview.GraphView
-        android:id="@+id/graph"
-        android:layout_width="300dp"
-        android:layout_height="200dp"
-        tools:context=".MainActivity">
+        <EditText
+            android:id="@+id/textAnimalName"
+            android:layout_width="300dp"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:gravity="center"
+            android:hint="type new animal name"
+            android:layout_marginTop="50dp"
+            android:layout_marginBottom="50dp"
+            android:textSize="25sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            />
 
-    </com.jjoe64.graphview.GraphView>
+        <TextView
+            android:id="@+id/textTest"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:gravity="center"
+            android:layout_marginBottom="30dp"
+            android:textSize="25sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            />
 
+        <com.jjoe64.graphview.GraphView
+            android:id="@+id/graph"
+            android:layout_width="300dp"
+            android:layout_height="200dp">
 
-</LinearLayout>
+        </com.jjoe64.graphview.GraphView>
+
+    </LinearLayout>
+
+</ScrollView>

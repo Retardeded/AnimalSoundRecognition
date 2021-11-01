@@ -1,8 +1,6 @@
 package com.example.animalsoundrecognition
 
 import com.example.animalsoundrecognition.model.DataSound
-import com.example.animalsoundrecognition.model.Quiz
-import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Headers
