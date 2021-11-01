@@ -3,23 +3,27 @@ package com.example.animalsoundrecognition
 import com.example.animalsoundrecognition.model.DataSound
 import com.example.animalsoundrecognition.model.Quiz
 import retrofit2.Call
+import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.Headers
+import retrofit2.http.POST
+import retrofit2.Response
 import retrofit2.http.*
 
 
 interface SoundService {
 
     @GET("api/sounds/soundInfo")
-    fun getSounds(): Call<List<DataSound>>
+    suspend fun getSounds(): Response<List<DataSound>>
 
     @GET("api/sounds/{id}")
-    fun getSound( @Path("id") id:String): Call<DataSound>
-
+    suspend fun getSound( @Path("id") id:String): Response<DataSound>
 
     @Headers("Content-Type: application/json")
     @POST("api/sounds")
-    fun postSound(@Body sound: DataSound): Call<DataSound>
+    suspend fun postSound(@Body sound: DataSound): Response<DataSound>
 
     @Headers("Content-Type: application/json")
     @POST("api/sounds/check")
-    fun checkSound(@Body sound: DataSound): Call<List<Pair<DataSound, Double>>>
+    suspend fun checkSound(@Body sound: DataSound): Response<List<Pair<DataSound, Double>>>
 }

@@ -7,7 +7,6 @@ import android.view.Menu
 import android.view.MenuItem
 import android.widget.EditText
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import ca.uol.aig.fftpack.RealDoubleFFT
 import com.example.animalsoundrecognition.model.DataGraph
@@ -17,16 +16,17 @@ import com.jjoe64.graphview.series.BarGraphSeries
 import com.jjoe64.graphview.series.BaseSeries
 import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.LineGraphSeries
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.FileOutputStream
 import java.io.IOException
 
 
-const val SAMPLE_RATE = 44100
+//const val SAMPLE_RATE = 44100
+const val SAMPLE_RATE = 4410
 const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
 const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
 
@@ -41,7 +41,7 @@ class MainActivity : AppCompatActivity() {
     //.baseUrl("http://192.168.1.3:8080/")
     private lateinit var textTest:TextView
     private lateinit var animalNameText:EditText
-    var currentRecord:MutableList<DataGraph> = mutableListOf()
+    var currentRecordFreqDomain:MutableList<DataGraph> = mutableListOf()
     var soundStartingTime:Long = 0
     var currentDuration:Long = 0
 
@@ -89,124 +89,76 @@ class MainActivity : AppCompatActivity() {
 
         service = retrofit.create(SoundService::class.java)
     }
-    fun getSounds() {
-        mGetThread = Thread(Runnable {getSoundsCall()})
-        mGetThread!!.start()
-    }
 
-    fun getSoundsCall() {
-        val call = service.getSounds()
-        call.enqueue(object : Callback<List<DataSound>> {
-            override fun onResponse(call: Call<List<DataSound>>, response: Response<List<DataSound>>) {
-                if (response.code() == 200) {
-                    //
-                    textTest.text = response.toString()
-
-                    val quiz = response.body()!!
-                    val stringBuilder = quiz.toString();
-                    textTest.text = stringBuilder
-
-                } else
-                    textTest.text = "cOS zle"
+    suspend fun getSounds() {
+        val response = service.getSounds()
+        GlobalScope.launch(Dispatchers.Main) {
+            if (response.isSuccessful) {
+                textTest.text = response.toString()
+                val quiz = response.body()!!
+                val stringBuilder = quiz.toString();
+                textTest.text = stringBuilder
             }
-            override fun onFailure(call: Call<List<DataSound>>, t: Throwable) {
-                //
-                val text = "MSG:" + t.message + "CAUSE: " + t.cause
-                //textTest.text = "FAIL"
+            else {
+                val text = "MSG:" + response.message() + "CAUSE: " + response.errorBody()
                 textTest.text = text
             }
-        })
+        }
     }
 
-    fun getSound() {
-        mGetThread = Thread(Runnable {getSoundCall()})
-        mGetThread!!.start()
-    }
-
-    fun getSoundCall() {
+    suspend fun getSound() {
         val id = animalNameText.text.toString()
-        val call = service.getSound(id)
-        call.enqueue(object : Callback<DataSound> {
-            override fun onResponse(call: Call<DataSound>, response: Response<DataSound>) {
-                if (response.code() == 200) {
-                    //
-                    textTest.text = response.toString()
-
-                    val quiz = response.body()!!
-                    val stringBuilder = quiz.toString();
-                    textTest.text = stringBuilder
-
-                } else {
-                    textTest.text = "cOS zle"
-                    //textTest.text = response.message()
-                }
+        val response = service.getSound(id)
+        GlobalScope.launch(Dispatchers.Main) {
+            if (response.isSuccessful) {
+                textTest.text = response.toString()
+                val soundData = response.body()!!
+                val stringBuilder = soundData.toString();
+                textTest.text = stringBuilder
+                currentRecordFreqDomain = loadDataSound(soundData)
             }
-            override fun onFailure(call: Call<DataSound>, t: Throwable) {
-                //
-                val text = "MSG:" + t.message + "CAUSE: " + t.cause
-                //textTest.text = "FAIL"
+            else {
+                val text = "MSG:" + response.message() + "CAUSE: " + response.errorBody()
                 textTest.text = text
             }
-        })
+        }
     }
 
-    fun uploadSound() {
-        mUploadThread = Thread(Runnable {postSound()})
-        mUploadThread!!.start()
-    }
-
-    private fun postSound() {
+    suspend fun postSound() {
         val sound = createDataSound()
-        val call = service.postSound(sound)
-        call.enqueue(object : Callback<DataSound> {
-            override fun onResponse(call: Call<DataSound>, response: Response<DataSound>) {
-                if (response.code() == 200) {
-                    //
-                    textTest.text = response.toString()
-                    val dataSound = response.body()!!
-                    val stringBuilder = dataSound.toString();
-                    textTest.text = stringBuilder
-
-                } else
-                    textTest.text = "something wrong"
+        val response = service.postSound(sound)
+        GlobalScope.launch(Dispatchers.Main) {
+            if (response.isSuccessful) {
+                textTest.text = response.toString()
+                val dataSound = response.body()!!
+                val stringBuilder = dataSound.toString();
+                textTest.text = stringBuilder
             }
-
-            override fun onFailure(call: Call<DataSound>, t: Throwable) {
-                val text = "MSG:" + t.message + "CAUSE: " + t.cause
-                //textTest.text = "FAIL"
+            else {
+                val text = "MSG:" + response.message() + "CAUSE: " + response.errorBody()
                 textTest.text = text
             }
-        })
+        }
     }
 
-    fun checkSound() {
-        mPostThread = Thread(Runnable {checkSoundCall()})
-        mPostThread!!.start()
-    }
-
-    private fun checkSoundCall() {
+    suspend fun checkSound() {
         val sound = createDataSound()
-        val call = service.checkSound(sound)
-        call.enqueue(object : Callback<List<Pair<DataSound, Double>>>{
-            override fun onResponse(call: Call<List<Pair<DataSound, Double>>>, response: Response<List<Pair<DataSound, Double>>>) {
-                if (response.code() == 200) {
-                    //
-                    textTest.text = response.toString()
-                    val dataSound = response.body()!!
-                    val stringBuilder = dataSound.toString();
-                    textTest.text = stringBuilder
-
-                } else
-                    textTest.text = "something wrong"
+        val response = service.checkSound(sound)
+        GlobalScope.launch(Dispatchers.Main) {
+            if (response.isSuccessful) {
+                textTest.text = response.toString()
+                val dataSound = response.body()!!
+                val stringBuilder = dataSound.toString();
+                textTest.text = stringBuilder
             }
-
-            override fun onFailure(call: Call<List<Pair<DataSound, Double>>>, t: Throwable) {
-                val text = "MSG:" + t.message + "CAUSE: " + t.cause
-                //textTest.text = "FAIL"
+            else {
+                val text = "MSG:" + response.message() + "CAUSE: " + response.errorBody()
                 textTest.text = text
             }
-        })
+        }
     }
+
+
 
     override fun onStart() {
         super.onStart()
@@ -225,48 +177,51 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         // Handle item selection
-        when (item?.itemId) {
-            R.id.device_access_mic -> {
-                startRecording()
-                invalidateOptionsMenu()
-                return true
-            }
-            R.id.device_access_mic_muted -> {
-                stopRecording()
-                invalidateOptionsMenu()
-                return true
-            }
-            R.id.device_access_audio_play -> {
-                startPlaying()
-                invalidateOptionsMenu()
-                return true
-            }
-            R.id.device_access_audio_stop -> {
-                stopPlaying()
-                invalidateOptionsMenu()
-                return true
-            }
-            R.id.upload_sound -> {
-                uploadSound()
-                return true
-            }
-            R.id.check_sound -> {
-                checkSound()
-                return true
-            }
-            R.id.get_sound_types -> {
-                getSounds()
-                return true
-            }
-            R.id.get_sound -> {
-                getSound()
-                return true
-            }
-            R.id.action_settings -> {
-                initGraphView()
-                return true
+        GlobalScope.launch(Dispatchers.IO) {
+            when (item?.itemId) {
+                R.id.device_access_mic -> {
+                    startRecording()
+                    invalidateOptionsMenu()
+                    return@launch
+                }
+                R.id.device_access_mic_muted -> {
+                    stopRecording()
+                    invalidateOptionsMenu()
+                    return@launch
+                }
+                R.id.device_access_audio_play -> {
+                    startPlaying()
+                    invalidateOptionsMenu()
+                    return@launch
+                }
+                R.id.device_access_audio_stop -> {
+                    stopPlaying()
+                    invalidateOptionsMenu()
+                    return@launch
+                }
+                R.id.upload_sound -> {
+                    postSound()
+                    return@launch
+                }
+                R.id.check_sound -> {
+                    checkSound()
+                    return@launch
+                }
+                R.id.get_sound_types -> {
+                    getSounds()
+                    return@launch
+                }
+                R.id.get_sound -> {
+                    getSound()
+                    return@launch
+                }
+                R.id.action_settings -> {
+                    initGraphView()
+                    return@launch
+                }
             }
         }
+
         return item?.let { super.onOptionsItemSelected(it) }
     }
 
@@ -318,8 +273,10 @@ class MainActivity : AppCompatActivity() {
     private fun startPlaying() {
 
         val sound = createDataSound()
-        val stringBuilder = sound.toString();
-        textTest.text = stringBuilder
+        val stringBuilder = sound.toString()
+        GlobalScope.launch( Dispatchers.Main ){
+            textTest.text = stringBuilder
+        }
 
 
         mMediaPlayer = MediaPlayer().apply {
@@ -340,9 +297,21 @@ class MainActivity : AppCompatActivity() {
         mRecordThread!!.start()
     }
 
+    private fun loadDataSound(sound:DataSound): MutableList<DataGraph> {
+        val pointsInGraph = 3584
+        val dataGraphs: MutableList<DataGraph> = mutableListOf()
+        val numberOfGraphs = (sound.dataPoints.size / pointsInGraph)-1
+        for (i in 0..numberOfGraphs) {
+            val graph = DataGraph(sound.dataPoints.subList(i*pointsInGraph, (i+1)*pointsInGraph))
+            dataGraphs.add(graph)
+        }
+
+        return dataGraphs
+    }
+
     private fun createDataSound(): DataSound {
         val dataPoints: MutableList<DataPoint> = mutableListOf()
-        for (graphs in currentRecord) {
+        for (graphs in currentRecordFreqDomain) {
             dataPoints.addAll(graphs.dataPoints)
         }
         val sound = DataSound(animalNameText.text.toString(), currentDuration, dataPoints)
@@ -365,7 +334,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun startRecording() {
 
-        currentRecord.clear()
+        currentRecordFreqDomain.clear()
         mAudioRecord = AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT, mMinBufferSize)
         mAudioRecord!!.startRecording()
         isRecording = true
@@ -430,19 +399,19 @@ class MainActivity : AppCompatActivity() {
     private fun replayGraphView() {
         var index = 0
         val audioData = ShortArray(mMinBufferSize)
-        while (isPlaying && index < currentRecord.size) {
+        while (isPlaying && index < currentRecordFreqDomain.size) {
                 val read = mAudioRecord!!.read(audioData, 0, mMinBufferSize)
                 if (read != AudioRecord.ERROR_INVALID_OPERATION && read != AudioRecord.ERROR_BAD_VALUE) {
-                val num =  currentRecord[index].dataPoints.size
+                val num =  currentRecordFreqDomain[index].dataPoints.size
                 //os?.write(audioData, 0, mMinBufferSize);
                 val data = arrayOfNulls<DataPoint>(num)
                 if (isBarGraph) {
                     for (i in 0 until num) {
-                        data[i] = currentRecord[index].dataPoints[i]
+                        data[i] = currentRecordFreqDomain[index].dataPoints[i]
                     }
                 } else {
                     for (i in 0 until num) {
-                        data[i] = currentRecord[index].dataPoints[i]
+                        data[i] = currentRecordFreqDomain[index].dataPoints[i]
                     }
                 }
                 this@MainActivity.runOnUiThread { mBaseSeries!!.resetData(data) }
@@ -477,7 +446,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 val list: List<DataPoint> = data.toList().filterNotNull()
-                currentRecord.add(DataGraph(list))
+                currentRecordFreqDomain.add(DataGraph(list))
 
                 this@MainActivity.runOnUiThread { mBaseSeries!!.resetData(data) }
             }

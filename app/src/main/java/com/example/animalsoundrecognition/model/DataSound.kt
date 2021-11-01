@@ -6,7 +6,7 @@ class DataSound(title:String, durationMillis:Long, dataPoints:List<DataPoint>) {
     private val id: Int? = null
     private val title: String? = title
     private val durationMillis: Long? = durationMillis
-    private val dataPoints: List<DataPoint> = dataPoints
+    val dataPoints: List<DataPoint> = dataPoints
     override fun toString(): String {
         return "Sound(id=$id, title=$title, durationMilis=$durationMillis), data=${dataPoints.take(2)}\n"
     }
