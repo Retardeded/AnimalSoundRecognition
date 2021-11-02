@@ -34,7 +34,6 @@ class MainActivity : AppCompatActivity() {
 
     lateinit var service:SoundService
     //var okHttpClient: OkHttpClient? = null
-
     // tutaj ustaw swoje lokalne ip
     val ipString = "http://192.168.1.3:8080"
     //.baseUrl("http://10.0.0.5:8080/")
@@ -52,9 +51,6 @@ class MainActivity : AppCompatActivity() {
     private var recorder: MediaRecorder? = null
     private var mMediaPlayer: MediaPlayer? = null
     private var mRecordThread: Thread? = null
-    private var mPostThread: Thread? = null
-    private var mUploadThread: Thread? = null
-    private var mGetThread: Thread? = null
     private var mBaseSeries: BaseSeries<DataPoint>? = null
 
     private var mMinBufferSize = 0
@@ -181,97 +177,69 @@ class MainActivity : AppCompatActivity() {
             when (item?.itemId) {
                 R.id.device_access_mic -> {
                     startRecording()
-                    invalidateOptionsMenu()
-                    return@launch
                 }
                 R.id.device_access_mic_muted -> {
                     stopRecording()
-                    invalidateOptionsMenu()
-                    return@launch
                 }
                 R.id.device_access_audio_play -> {
                     startPlaying()
-                    invalidateOptionsMenu()
-                    return@launch
                 }
                 R.id.device_access_audio_stop -> {
                     stopPlaying()
-                    invalidateOptionsMenu()
-                    return@launch
                 }
                 R.id.upload_sound -> {
                     postSound()
-                    return@launch
                 }
                 R.id.check_sound -> {
                     checkSound()
-                    return@launch
                 }
                 R.id.get_sound_types -> {
                     getSounds()
-                    return@launch
                 }
                 R.id.get_sound -> {
                     getSound()
-                    return@launch
                 }
                 R.id.action_settings -> {
                     initGraphView()
-                    return@launch
                 }
             }
+            return@launch
         }
 
         return item?.let { super.onOptionsItemSelected(it) }
     }
 
     override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
-        val item1: MenuItem?
-        val item2: MenuItem?
-        val item3: MenuItem?
-        val item4: MenuItem?
+        val recordAudioOption = menu!!.findItem(R.id.device_access_mic)
+        val stopRecordAudioOption = menu.findItem(R.id.device_access_mic_muted)
+        val playSoundOption = menu.findItem(R.id.device_access_audio_play)
+        val stopPlaySoundOption = menu.findItem(R.id.device_access_audio_stop)
 
-        if (!isRecording) {
-            item1 = menu?.findItem(R.id.device_access_mic_muted)
-            item2 = menu?.findItem(R.id.device_access_mic)
+        if (isRecording) {
+            changeMenuOptionVisibility(recordAudioOption, false)
+            changeMenuOptionVisibility(stopRecordAudioOption, true)
         } else {
-            item1 = menu?.findItem(R.id.device_access_mic)
-            item2 = menu?.findItem(R.id.device_access_mic_muted)
+            changeMenuOptionVisibility(recordAudioOption, true)
+            changeMenuOptionVisibility(stopRecordAudioOption, false)
         }
 
-        if(!isPlaying) {
-            item3 = menu?.findItem(R.id.device_access_audio_stop)
-            item4 = menu?.findItem(R.id.device_access_audio_play)
+        if(isPlaying) {
+            changeMenuOptionVisibility(playSoundOption, false)
+            changeMenuOptionVisibility(stopPlaySoundOption, true)
         } else {
-            item3 = menu?.findItem(R.id.device_access_audio_play)
-            item4 = menu?.findItem(R.id.device_access_audio_stop)
-        }
-
-
-
-        if (item1 != null) {
-            item1.isEnabled = false
-            item1.isVisible = false
-            if (item2 != null) {
-                item2.isEnabled = true
-                item2.isVisible = true
-            }
-        }
-
-        if (item3 != null) {
-            item3.isEnabled = false
-            item3.isVisible = false
-            if (item4 != null) {
-                item4.isEnabled = true
-                item4.isVisible = true
-            }
+            changeMenuOptionVisibility(playSoundOption, true)
+            changeMenuOptionVisibility(stopPlaySoundOption, false)
         }
 
         return super.onPrepareOptionsMenu(menu)
     }
 
-    private fun startPlaying() {
+    private fun changeMenuOptionVisibility(option: MenuItem, status:Boolean) {
+        option.isEnabled = status
+        option.isVisible = status
+    }
 
+    private fun startPlaying() {
         val sound = createDataSound()
         val stringBuilder = sound.toString()
         GlobalScope.launch( Dispatchers.Main ){
@@ -295,6 +263,7 @@ class MainActivity : AppCompatActivity() {
 
         mRecordThread = Thread(Runnable { replayGraphView() })
         mRecordThread!!.start()
+        invalidateOptionsMenu()
     }
 
     private fun loadDataSound(sound:DataSound): MutableList<DataGraph> {
@@ -329,6 +298,7 @@ class MainActivity : AppCompatActivity() {
         mAudioRecord?.release()
         mAudioRecord = null
         mBaseSeries?.resetData(arrayOf<DataPoint>())
+        invalidateOptionsMenu()
     }
 
 
@@ -354,9 +324,11 @@ class MainActivity : AppCompatActivity() {
             start()
         }
 
+        //updateGraphView()
         mRecordThread = Thread(Runnable { updateGraphView() })
         mRecordThread!!.start()
         soundStartingTime = System.currentTimeMillis()
+        invalidateOptionsMenu()
     }
 
     private fun stopRecording() {
@@ -377,6 +349,7 @@ class MainActivity : AppCompatActivity() {
             release()
         }
         recorder = null
+        invalidateOptionsMenu()
     }
 
     private fun initGraphView() {
@@ -418,6 +391,7 @@ class MainActivity : AppCompatActivity() {
             }
             index++
         }
+        stopPlaying()
     }
 
     private fun updateGraphView() {
@@ -452,6 +426,7 @@ class MainActivity : AppCompatActivity() {
             }
 
         }
+
     }
 
 }
