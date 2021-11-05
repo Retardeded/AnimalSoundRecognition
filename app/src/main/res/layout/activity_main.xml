@@ -1,4 +1,4 @@
-<HorizontalScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -41,13 +41,13 @@
 
         <com.jjoe64.graphview.GraphView
             android:id="@+id/graph"
-            android:layout_width="500dp"
+            android:layout_width="300dp"
             android:layout_height="250dp">
         </com.jjoe64.graphview.GraphView>
 
         <com.jjoe64.graphview.GraphView
             android:id="@+id/graphTime"
-            android:layout_width="500dp"
+            android:layout_width="300dp"
             android:layout_height="250dp"
             android:gravity="left">
 
@@ -55,4 +55,4 @@
 
     </LinearLayout>
 
-</HorizontalScrollView>
+</ScrollView>

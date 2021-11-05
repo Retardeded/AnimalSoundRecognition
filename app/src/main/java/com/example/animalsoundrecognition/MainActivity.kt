@@ -26,7 +26,7 @@ import java.io.IOException
 
 
 //const val SAMPLE_RATE = 44100
-const val SAMPLE_RATE = 4410
+const val SAMPLE_RATE = 10100
 const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
 const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
 
@@ -115,8 +115,8 @@ class MainActivity : AppCompatActivity() {
                 val soundData = response.body()!!
                 val stringBuilder = soundData.toString();
                 textTest.text = stringBuilder
-                currentRecordFreqDomain = loadDataSound(soundData)
-                currentRecordTimeDomain = loadDataSound(soundData)
+                currentRecordFreqDomain = loadDataSound(soundData.freqDomainPoints)
+                currentRecordTimeDomain = loadDataSound(soundData.timeDomainPoints)
             }
             else {
                 val text = "MSG:" + response.message() + "CAUSE: " + response.errorBody()
@@ -271,25 +271,31 @@ class MainActivity : AppCompatActivity() {
         invalidateOptionsMenu()
     }
 
-    private fun loadDataSound(sound:DataSound): MutableList<DataGraph> {
+    private fun loadDataSound(soundData:List<DataPoint>): MutableList<DataGraph> {
         val dataGraphs: MutableList<DataGraph> = mutableListOf()
-        val numberOfGraphs = (sound.freqDomainPoints.size / pointsInGraphs)-1
+        val numberOfGraphs = (soundData.size / pointsInGraphs)-1
         for (i in 0..numberOfGraphs) {
-            val graph = DataGraph(sound.freqDomainPoints.subList((i*pointsInGraphs).toInt(),
-                ((i+1)*pointsInGraphs).toInt()
-            ))
+            val graph = DataGraph(
+                soundData.subList(
+                    ((i * pointsInGraphs).toInt()),
+                    ((i + 1) * pointsInGraphs).toInt()
+                )
+            )
             dataGraphs.add(graph)
         }
-
         return dataGraphs
     }
 
     private fun createDataSound(): DataSound {
         val dataPoints: MutableList<DataPoint> = mutableListOf()
+        val timePoints: MutableList<DataPoint> = mutableListOf()
         for (graphs in currentRecordFreqDomain) {
             dataPoints.addAll(graphs.dataPoints)
         }
-        val sound = DataSound(animalNameText.text.toString(), currentDuration, dataPoints, dataPoints)
+        for (graphs in currentRecordTimeDomain) {
+            timePoints.addAll(graphs.dataPoints)
+        }
+        val sound = DataSound(animalNameText.text.toString(), currentDuration, dataPoints, timePoints)
         return sound
     }
 
@@ -366,7 +372,7 @@ class MainActivity : AppCompatActivity() {
             mBaseSeries = LineGraphSeries<DataPoint>(arrayOf<DataPoint>())
             graph.title = "Time Domain"
         } else {
-            mBaseSeries = BarGraphSeries<DataPoint>(arrayOf<DataPoint>())
+            mBaseSeries = LineGraphSeries<DataPoint>(arrayOf<DataPoint>())
             graph.title = "Frequency Domain"
         }
 
