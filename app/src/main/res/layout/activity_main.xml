@@ -1,4 +1,4 @@
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<HorizontalScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -15,12 +15,11 @@
 
         <EditText
             android:id="@+id/textAnimalName"
-            android:layout_width="300dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text=""
-            android:gravity="center"
+            android:gravity="left"
             android:hint="type new animal name"
-            android:layout_marginTop="50dp"
             android:layout_marginBottom="50dp"
             android:textSize="25sp"
             android:textStyle="bold"
@@ -32,20 +31,28 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text=""
-            android:gravity="center"
+            android:gravity="left"
             android:layout_marginBottom="30dp"
             android:textSize="25sp"
             android:textStyle="bold"
             android:textColor="@android:color/black"
             />
 
+
         <com.jjoe64.graphview.GraphView
             android:id="@+id/graph"
-            android:layout_width="300dp"
-            android:layout_height="200dp">
+            android:layout_width="500dp"
+            android:layout_height="250dp">
+        </com.jjoe64.graphview.GraphView>
+
+        <com.jjoe64.graphview.GraphView
+            android:id="@+id/graphTime"
+            android:layout_width="500dp"
+            android:layout_height="250dp"
+            android:gravity="left">
 
         </com.jjoe64.graphview.GraphView>
 
     </LinearLayout>
 
-</ScrollView>
+</HorizontalScrollView>

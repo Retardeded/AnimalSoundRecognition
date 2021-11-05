@@ -2,12 +2,11 @@ package com.example.animalsoundrecognition.model
 
 import com.jjoe64.graphview.series.DataPoint
 
-class DataSound(title:String, durationMillis:Long, dataPoints:List<DataPoint>) {
+class DataSound(private val title: String, private val durationMillis: Long,
+                val freqDomainPoints: List<DataPoint>, val timeDomainPoints:List<DataPoint>) {
     private val id: Int? = null
-    private val title: String? = title
-    private val durationMillis: Long? = durationMillis
-    val freqDomainPoints: List<DataPoint> = dataPoints
     override fun toString(): String {
-        return "Quiz(id=$id, title=$title, durationMilis=$durationMillis, dataPoints=${freqDomainPoints.take(3)})"
+        return "Sound(id=$id, title=$title, durationMilis=$durationMillis, freqPoints=${freqDomainPoints.take(3)}" +
+                ", timePoints=${timeDomainPoints.take(3)})"
     }
 }
