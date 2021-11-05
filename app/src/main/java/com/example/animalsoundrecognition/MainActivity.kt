@@ -269,9 +269,9 @@ class MainActivity : AppCompatActivity() {
     private fun loadDataSound(sound:DataSound): MutableList<DataGraph> {
         val pointsInGraph = 3584
         val dataGraphs: MutableList<DataGraph> = mutableListOf()
-        val numberOfGraphs = (sound.dataPoints.size / pointsInGraph)-1
+        val numberOfGraphs = (sound.freqDomainPoints.size / pointsInGraph)-1
         for (i in 0..numberOfGraphs) {
-            val graph = DataGraph(sound.dataPoints.subList(i*pointsInGraph, (i+1)*pointsInGraph))
+            val graph = DataGraph(sound.freqDomainPoints.subList(i*pointsInGraph, (i+1)*pointsInGraph))
             dataGraphs.add(graph)
         }
 
