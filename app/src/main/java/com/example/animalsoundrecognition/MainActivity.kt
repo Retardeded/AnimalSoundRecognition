@@ -26,7 +26,11 @@ import java.io.IOException
 
 
 //const val SAMPLE_RATE = 44100
-const val SAMPLE_RATE = 4410
+//3584
+//344
+const val SAMPLE_RATE = 10100
+//800
+//400
 const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
 const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
 
@@ -41,6 +45,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var textTest:TextView
     private lateinit var animalNameText:EditText
     var currentRecordFreqDomain:MutableList<DataGraph> = mutableListOf()
+    var currentRecordTimeDomain:MutableList<DataGraph> = mutableListOf()
     var soundStartingTime:Long = 0
     var currentDuration:Long = 0
 
@@ -52,6 +57,7 @@ class MainActivity : AppCompatActivity() {
     private var mMediaPlayer: MediaPlayer? = null
     private var mRecordThread: Thread? = null
     private var mBaseSeries: BaseSeries<DataPoint>? = null
+    private var mTimeSeries: BaseSeries<DataPoint>? = null
 
     private var mMinBufferSize = 0
     private var isRecording = false
@@ -61,6 +67,8 @@ class MainActivity : AppCompatActivity() {
     private var transformer: RealDoubleFFT? = null
 
     private lateinit var graph: GraphView
+    private lateinit var graphTime: GraphView
+    private var pointsInGraphs: Long = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,10 +77,9 @@ class MainActivity : AppCompatActivity() {
         animalNameText = findViewById(R.id.textAnimalName)
         textTest = findViewById(R.id.textTest)
         graph = findViewById(R.id.graph)
+        graphTime = findViewById(R.id.graphTime)
         mMinBufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
-
         textTest.text = "DEFAULT"
-
         fileName = "${externalCacheDir?.absolutePath}/audiorecordtest.3gp"
         createClient()
     }
@@ -82,7 +89,6 @@ class MainActivity : AppCompatActivity() {
             .baseUrl(ipString)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-
         service = retrofit.create(SoundService::class.java)
     }
 
@@ -91,8 +97,8 @@ class MainActivity : AppCompatActivity() {
         GlobalScope.launch(Dispatchers.Main) {
             if (response.isSuccessful) {
                 textTest.text = response.toString()
-                val quiz = response.body()!!
-                val stringBuilder = quiz.toString();
+                val sound = response.body()!!
+                val stringBuilder = sound.toString();
                 textTest.text = stringBuilder
             }
             else {
@@ -111,7 +117,8 @@ class MainActivity : AppCompatActivity() {
                 val soundData = response.body()!!
                 val stringBuilder = soundData.toString();
                 textTest.text = stringBuilder
-                currentRecordFreqDomain = loadDataSound(soundData)
+                currentRecordFreqDomain = loadDataSound(soundData.freqDomainPoints)
+                currentRecordTimeDomain = loadDataSound(soundData.timeDomainPoints)
             }
             else {
                 val text = "MSG:" + response.message() + "CAUSE: " + response.errorBody()
@@ -121,7 +128,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     suspend fun postSound() {
-        val sound = createDataSound()
+        val sound = createDataSound(true)
         val response = service.postSound(sound)
         GlobalScope.launch(Dispatchers.Main) {
             if (response.isSuccessful) {
@@ -138,7 +145,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     suspend fun checkSound() {
-        val sound = createDataSound()
+        val sound = createDataSound(false)
         val response = service.checkSound(sound)
         GlobalScope.launch(Dispatchers.Main) {
             if (response.isSuccessful) {
@@ -153,8 +160,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
-
 
     override fun onStart() {
         super.onStart()
@@ -240,7 +245,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startPlaying() {
-        val sound = createDataSound()
+        val sound = createDataSound(true)
         val stringBuilder = sound.toString()
         GlobalScope.launch( Dispatchers.Main ){
             textTest.text = stringBuilder
@@ -266,24 +271,33 @@ class MainActivity : AppCompatActivity() {
         invalidateOptionsMenu()
     }
 
-    private fun loadDataSound(sound:DataSound): MutableList<DataGraph> {
-        val pointsInGraph = 3584
+    private fun loadDataSound(soundData:List<DataPoint>): MutableList<DataGraph> {
         val dataGraphs: MutableList<DataGraph> = mutableListOf()
-        val numberOfGraphs = (sound.dataPoints.size / pointsInGraph)-1
+        val numberOfGraphs = (soundData.size / pointsInGraphs)-1
         for (i in 0..numberOfGraphs) {
-            val graph = DataGraph(sound.dataPoints.subList(i*pointsInGraph, (i+1)*pointsInGraph))
+            val graph = DataGraph(
+                soundData.subList(
+                    ((i * pointsInGraphs).toInt()),
+                    ((i + 1) * pointsInGraphs).toInt()
+                )
+            )
             dataGraphs.add(graph)
         }
-
         return dataGraphs
     }
 
-    private fun createDataSound(): DataSound {
-        val dataPoints: MutableList<DataPoint> = mutableListOf()
-        for (graphs in currentRecordFreqDomain) {
-            dataPoints.addAll(graphs.dataPoints)
+    private fun createDataSound(includeFreq:Boolean): DataSound {
+        val freqPoints: MutableList<DataPoint> = mutableListOf()
+        val timePoints: MutableList<DataPoint> = mutableListOf()
+        if(includeFreq) {
+            for (graphs in currentRecordFreqDomain) {
+                freqPoints.addAll(graphs.dataPoints)
+            }
         }
-        val sound = DataSound(animalNameText.text.toString(), currentDuration, dataPoints)
+        for (graphs in currentRecordTimeDomain) {
+            timePoints.addAll(graphs.dataPoints)
+        }
+        val sound = DataSound(animalNameText.text.toString(), currentDuration, pointsInGraphs, freqPoints, timePoints)
         return sound
     }
 
@@ -294,17 +308,17 @@ class MainActivity : AppCompatActivity() {
 
         mRecordThread = null
         mAudioRecord?.stop()
-        mRecordThread = null
         mAudioRecord?.release()
         mAudioRecord = null
         mBaseSeries?.resetData(arrayOf<DataPoint>())
+        mTimeSeries?.resetData(arrayOf<DataPoint>())
         invalidateOptionsMenu()
     }
-
 
     private fun startRecording() {
 
         currentRecordFreqDomain.clear()
+        currentRecordTimeDomain.clear()
         mAudioRecord = AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT, mMinBufferSize)
         mAudioRecord!!.startRecording()
         isRecording = true
@@ -324,7 +338,6 @@ class MainActivity : AppCompatActivity() {
             start()
         }
 
-        //updateGraphView()
         mRecordThread = Thread(Runnable { updateGraphView() })
         mRecordThread!!.start()
         soundStartingTime = System.currentTimeMillis()
@@ -342,6 +355,7 @@ class MainActivity : AppCompatActivity() {
             mAudioRecord?.release()
             mAudioRecord = null
             mBaseSeries?.resetData(arrayOf<DataPoint>())
+            mTimeSeries?.resetData(arrayOf<DataPoint>())
         }
 
         recorder?.apply {
@@ -361,33 +375,46 @@ class MainActivity : AppCompatActivity() {
             graph.title = "Frequency Domain"
         }
 
+
+        graphTime.title = "Time Domain"
+        mTimeSeries = LineGraphSeries<DataPoint>(arrayOf<DataPoint>())
+
         isBarGraph = !isBarGraph
 
         if (graph.series.count() > 0) {
             graph.removeAllSeries()
         }
         graph.addSeries(mBaseSeries)
+
+        if (graphTime.series.count() > 0) {
+            graphTime.removeAllSeries()
+        }
+        graphTime.addSeries(mTimeSeries)
     }
 
     private fun replayGraphView() {
         var index = 0
         val audioData = ShortArray(mMinBufferSize)
-        while (isPlaying && index < currentRecordFreqDomain.size) {
+        while (isPlaying && index < currentRecordFreqDomain.size || index < currentRecordTimeDomain.size) {
             val read = mAudioRecord!!.read(audioData, 0, mMinBufferSize)
             if (read != AudioRecord.ERROR_INVALID_OPERATION && read != AudioRecord.ERROR_BAD_VALUE) {
                 val num =  currentRecordFreqDomain[index].dataPoints.size
+                val numTime =  currentRecordTimeDomain[index].dataPoints.size
                 //os?.write(audioData, 0, mMinBufferSize);
                 val data = arrayOfNulls<DataPoint>(num)
-                if (isBarGraph) {
-                    for (i in 0 until num) {
-                        data[i] = currentRecordFreqDomain[index].dataPoints[i]
-                    }
-                } else {
-                    for (i in 0 until num) {
-                        data[i] = currentRecordFreqDomain[index].dataPoints[i]
-                    }
+                val dataTime = arrayOfNulls<DataPoint>(num)
+                for (i in 0 until num) {
+                    data[i] = currentRecordFreqDomain[index].dataPoints[i]
                 }
-                this@MainActivity.runOnUiThread { mBaseSeries!!.resetData(data) }
+
+                for (i in 0 until numTime) {
+                    dataTime[i] = currentRecordTimeDomain[index].dataPoints[i]
+                }
+
+                this@MainActivity.runOnUiThread {
+                    mBaseSeries!!.resetData(data)
+                    mTimeSeries!!.resetData(dataTime)
+                }
             }
             index++
         }
@@ -396,18 +423,21 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateGraphView() {
         val audioData = ShortArray(mMinBufferSize)
+        var index = 0
         while (isRecording) {
             val read = mAudioRecord!!.read(audioData, 0, mMinBufferSize)
             if (read != AudioRecord.ERROR_INVALID_OPERATION && read != AudioRecord.ERROR_BAD_VALUE) {
                 val num = audioData.size
                 //os?.write(audioData, 0, mMinBufferSize);
                 val data = arrayOfNulls<DataPoint>(num)
+                val dataTime = arrayOfNulls<DataPoint>(num)
                 if (isBarGraph) {
                     // apply Fast Fourier Transform here
                     transformer = RealDoubleFFT(num)
                     val toTransform = DoubleArray(num)
                     for (i in 0 until num) {
-                        toTransform[i] = audioData[i].toDouble() / Short.MAX_VALUE
+                        //toTransform[i] = audioData[i].toDouble() / Short.MAX_VALUE
+                        toTransform[i] = audioData[i].toDouble()
                     }
                     transformer!!.ft(toTransform)
                     for (i in 0 until num) {
@@ -419,14 +449,50 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                val list: List<DataPoint> = data.toList().filterNotNull()
-                currentRecordFreqDomain.add(DataGraph(list))
+                for (i in 0 until num) {
+                    dataTime[i] = DataPoint(i.toDouble(), audioData[i].toDouble())
+                }
 
-                this@MainActivity.runOnUiThread { mBaseSeries!!.resetData(data) }
+                val list: List<DataPoint> = data.toList().filterNotNull()
+                val listTime: List<DataPoint> = dataTime.toList().filterNotNull()
+
+                /*
+                println("size:" + num)
+                println("list:" + list )
+                var highPeak = list.maxByOrNull { it.y }
+                var lowPeak = list.minByOrNull { it.y }
+                println("max:" + highPeak)
+                println("min:" + lowPeak)
+
+
+                println("TIME")
+                println("size:" + num)
+                println("list:" + listTime)
+                var highPeakT = listTime.maxByOrNull { it.y }
+                var lowPeakT = listTime.minByOrNull { it.y }
+                println("max:" + highPeakT)
+                println("min:" + lowPeakT)
+
+                 */
+
+                index++
+
+
+                currentRecordFreqDomain.add(DataGraph(list))
+                currentRecordTimeDomain.add(DataGraph(listTime))
+
+                this@MainActivity.runOnUiThread {
+                    mBaseSeries!!.resetData(data)
+                    mTimeSeries!!.resetData(dataTime)
+                }
             }
 
         }
+        pointsInGraphs = audioData.size.toLong()
+        println("index::" + index)
 
     }
+
+
 
 }
