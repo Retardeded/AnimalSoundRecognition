@@ -17,6 +17,9 @@ interface SoundService {
     @GET("api/sounds/{id}")
     suspend fun getSound( @Path("id") id:String): Response<DataSound>
 
+    @DELETE("api/sounds/{id}")
+    suspend fun deleteSound( @Path("id") id:String): Response<Object>
+
     @Headers("Content-Type: application/json")
     @POST("api/sounds")
     suspend fun postSound(@Body sound: DataSound): Response<DataSound>

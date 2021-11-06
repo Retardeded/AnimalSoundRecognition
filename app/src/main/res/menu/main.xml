@@ -41,5 +41,10 @@
         app:showAsAction="ifRoom"
         android:enabled="true"
         android:visible="true" />
+    <item android:id="@+id/delete_sound"
+        android:title="@string/delete_sound"
+        app:showAsAction="ifRoom"
+        android:enabled="true"
+        android:visible="true" />
 
 </menu>

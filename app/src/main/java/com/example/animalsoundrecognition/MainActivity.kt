@@ -51,7 +51,7 @@ class MainActivity : AppCompatActivity() {
     private var recorder: MediaRecorder? = null
     private var mMediaPlayer: MediaPlayer? = null
     private var mRecordThread: Thread? = null
-    private var mBaseSeries: BaseSeries<DataPoint>? = null
+    private var mFreqSeries: BaseSeries<DataPoint>? = null
     private var mTimeSeries: BaseSeries<DataPoint>? = null
 
     private var mMinBufferSize = 0
@@ -124,6 +124,20 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    suspend fun deleteSound() {
+        val id = animalNameText.text.toString()
+        val response = service.deleteSound(id)
+        GlobalScope.launch(Dispatchers.Main) {
+            if (response.isSuccessful) {
+                textTest.text = response.toString()
+            }
+            else {
+                val text = "MSG:" + response.message() + "CAUSE: " + response.errorBody()
+                textTest.text = text
+            }
+        }
+    }
+
     suspend fun postSound() {
         val sound = createDataSound(false)
         val response = service.postSound(sound)
@@ -133,9 +147,6 @@ class MainActivity : AppCompatActivity() {
                 val dataSound = response.body()!!
                 val stringBuilder = dataSound.toString();
                 textTest.text = stringBuilder
-
-                println(sound.freqDomainPoints.size)
-                println(dataSound.freqDomainPoints.size)
             }
             else {
                 val text = "MSG:" + response.message() + "CAUSE: " + response.errorBody()
@@ -206,6 +217,9 @@ class MainActivity : AppCompatActivity() {
                 }
                 R.id.get_sound -> {
                     getSound()
+                }
+                R.id.delete_sound -> {
+                    deleteSound()
                 }
             }
             return@launch
@@ -310,7 +324,7 @@ class MainActivity : AppCompatActivity() {
         mRecordThread = null
         mAudioRecord?.release()
         mAudioRecord = null
-        mBaseSeries?.resetData(arrayOf<DataPoint>())
+        mFreqSeries?.resetData(arrayOf<DataPoint>())
         mTimeSeries?.resetData(arrayOf<DataPoint>())
         invalidateOptionsMenu()
     }
@@ -339,7 +353,6 @@ class MainActivity : AppCompatActivity() {
             start()
         }
 
-        //updateGraphView()
         mRecordThread = Thread(Runnable { updateGraphView() })
         mRecordThread!!.start()
         soundStartingTime = System.currentTimeMillis()
@@ -356,7 +369,7 @@ class MainActivity : AppCompatActivity() {
             }
             mAudioRecord?.release()
             mAudioRecord = null
-            mBaseSeries?.resetData(arrayOf<DataPoint>())
+            mFreqSeries?.resetData(arrayOf<DataPoint>())
             mTimeSeries?.resetData(arrayOf<DataPoint>())
         }
 
@@ -371,7 +384,7 @@ class MainActivity : AppCompatActivity() {
     private fun initGraphView() {
 
         val graphSeries = LineGraphSeries<DataPoint>(arrayOf<DataPoint>())
-        mBaseSeries = graphSeries
+        mFreqSeries = graphSeries
         graph.title = "Frequency Domain"
 
         graphTime.title = "Time Domain"
@@ -380,7 +393,7 @@ class MainActivity : AppCompatActivity() {
         if (graph.series.count() > 0) {
             graph.removeAllSeries()
         }
-        graph.addSeries(mBaseSeries)
+        graph.addSeries(mFreqSeries)
 
         if (graphTime.series.count() > 0) {
             graphTime.removeAllSeries()
@@ -409,7 +422,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 this@MainActivity.runOnUiThread {
-                    mBaseSeries!!.resetData(data)
+                    mFreqSeries!!.resetData(data)
                     mTimeSeries!!.resetData(dataTime)
                 }
             }
@@ -470,7 +483,7 @@ class MainActivity : AppCompatActivity() {
                 currentRecordTimeDomain.add(DataGraph(listTime))
 
                 this@MainActivity.runOnUiThread {
-                    mBaseSeries!!.resetData(data)
+                    mFreqSeries!!.resetData(data)
                     mTimeSeries!!.resetData(dataTime)
                 }
             }
