@@ -370,7 +370,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun initGraphView() {
 
-        mBaseSeries = LineGraphSeries<DataPoint>(arrayOf<DataPoint>())
+        val graphSeries = LineGraphSeries<DataPoint>(arrayOf<DataPoint>())
+        mBaseSeries = graphSeries
         graph.title = "Frequency Domain"
 
         graphTime.title = "Time Domain"

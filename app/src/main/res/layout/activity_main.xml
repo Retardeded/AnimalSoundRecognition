@@ -41,13 +41,13 @@
 
         <com.jjoe64.graphview.GraphView
             android:id="@+id/graph"
-            android:layout_width="300dp"
+            android:layout_width="wrap_content"
             android:layout_height="250dp">
         </com.jjoe64.graphview.GraphView>
 
         <com.jjoe64.graphview.GraphView
             android:id="@+id/graphTime"
-            android:layout_width="300dp"
+            android:layout_width="wrap_content"
             android:layout_height="250dp"
             android:gravity="left">
 
