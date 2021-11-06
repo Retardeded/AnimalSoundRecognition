@@ -57,7 +57,6 @@ class MainActivity : AppCompatActivity() {
     private var mMinBufferSize = 0
     private var isRecording = false
     private var isPlaying = false
-    private var isBarGraph = false
 
     private var transformer: RealDoubleFFT? = null
 
@@ -207,9 +206,6 @@ class MainActivity : AppCompatActivity() {
                 }
                 R.id.get_sound -> {
                     getSound()
-                }
-                R.id.action_settings -> {
-                    initGraphView()
                 }
             }
             return@launch
@@ -373,19 +369,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initGraphView() {
-        if (isBarGraph) {
-            mBaseSeries = LineGraphSeries<DataPoint>(arrayOf<DataPoint>())
-            graph.title = "Time Domain"
-        } else {
-            mBaseSeries = LineGraphSeries<DataPoint>(arrayOf<DataPoint>())
-            graph.title = "Frequency Domain"
-        }
 
+        mBaseSeries = LineGraphSeries<DataPoint>(arrayOf<DataPoint>())
+        graph.title = "Frequency Domain"
 
         graphTime.title = "Time Domain"
         mTimeSeries = LineGraphSeries<DataPoint>(arrayOf<DataPoint>())
-
-        isBarGraph = !isBarGraph
 
         if (graph.series.count() > 0) {
             graph.removeAllSeries()
@@ -438,22 +427,16 @@ class MainActivity : AppCompatActivity() {
                 //os?.write(audioData, 0, mMinBufferSize);
                 val data = arrayOfNulls<DataPoint>(num)
                 val dataTime = arrayOfNulls<DataPoint>(num)
-                if (isBarGraph) {
-                    // apply Fast Fourier Transform here
-                    transformer = RealDoubleFFT(num)
-                    val toTransform = DoubleArray(num)
-                    for (i in 0 until num) {
-                        //toTransform[i] = audioData[i].toDouble() / Short.MAX_VALUE
-                        toTransform[i] = audioData[i].toDouble()
-                    }
-                    transformer!!.ft(toTransform)
-                    for (i in 0 until num) {
-                        data[i] = DataPoint(i.toDouble(), toTransform[i])
-                    }
-                } else {
-                    for (i in 0 until num) {
-                        data[i] = DataPoint(i.toDouble(), audioData[i].toDouble())
-                    }
+                // apply Fast Fourier Transform here
+                transformer = RealDoubleFFT(num)
+                val toTransform = DoubleArray(num)
+                for (i in 0 until num) {
+                    //toTransform[i] = audioData[i].toDouble() / Short.MAX_VALUE
+                    toTransform[i] = audioData[i].toDouble()
+                }
+                transformer!!.ft(toTransform)
+                for (i in 0 until num) {
+                    data[i] = DataPoint(i.toDouble(), toTransform[i])
                 }
 
                 for (i in 0 until num) {

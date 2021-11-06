@@ -41,10 +41,5 @@
         app:showAsAction="ifRoom"
         android:enabled="true"
         android:visible="true" />
-    <item android:id="@+id/action_settings"
-        android:title="@string/action_settings"
-        app:showAsAction="ifRoom"
-        android:enabled="true"
-        android:visible="true" />
 
 </menu>
