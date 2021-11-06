@@ -12,7 +12,6 @@ import ca.uol.aig.fftpack.RealDoubleFFT
 import com.example.animalsoundrecognition.model.DataGraph
 import com.example.animalsoundrecognition.model.DataSound
 import com.jjoe64.graphview.GraphView
-import com.jjoe64.graphview.series.BarGraphSeries
 import com.jjoe64.graphview.series.BaseSeries
 import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.LineGraphSeries
@@ -65,6 +64,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var graph: GraphView
     private lateinit var graphTime: GraphView
     private var pointsInGraphs: Long = 0
+    private var numOfGraphs: Long = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -126,7 +126,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     suspend fun postSound() {
-        val sound = createDataSound()
+        val sound = createDataSound(false)
         val response = service.postSound(sound)
         GlobalScope.launch(Dispatchers.Main) {
             if (response.isSuccessful) {
@@ -134,16 +134,20 @@ class MainActivity : AppCompatActivity() {
                 val dataSound = response.body()!!
                 val stringBuilder = dataSound.toString();
                 textTest.text = stringBuilder
+
+                println(sound.freqDomainPoints.size)
+                println(dataSound.freqDomainPoints.size)
             }
             else {
                 val text = "MSG:" + response.message() + "CAUSE: " + response.errorBody()
                 textTest.text = text
             }
         }
+
     }
 
     suspend fun checkSound() {
-        val sound = createDataSound()
+        val sound = createDataSound(false)
         val response = service.checkSound(sound)
         GlobalScope.launch(Dispatchers.Main) {
             if (response.isSuccessful) {
@@ -245,7 +249,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startPlaying() {
-        val sound = createDataSound()
+        val sound = createDataSound(true)
         val stringBuilder = sound.toString()
         GlobalScope.launch( Dispatchers.Main ){
             textTest.text = stringBuilder
@@ -286,16 +290,18 @@ class MainActivity : AppCompatActivity() {
         return dataGraphs
     }
 
-    private fun createDataSound(): DataSound {
+    private fun createDataSound(includeFreqDomain:Boolean): DataSound {
         val dataPoints: MutableList<DataPoint> = mutableListOf()
         val timePoints: MutableList<DataPoint> = mutableListOf()
-        for (graphs in currentRecordFreqDomain) {
-            dataPoints.addAll(graphs.dataPoints)
+        if(includeFreqDomain) {
+            for (graphs in currentRecordFreqDomain) {
+                dataPoints.addAll(graphs.dataPoints)
+            }
         }
         for (graphs in currentRecordTimeDomain) {
             timePoints.addAll(graphs.dataPoints)
         }
-        val sound = DataSound(animalNameText.text.toString(), currentDuration, dataPoints, timePoints)
+        val sound = DataSound(animalNameText.text.toString(), currentDuration, pointsInGraphs, numOfGraphs, dataPoints, timePoints)
         return sound
     }
 
@@ -304,7 +310,6 @@ class MainActivity : AppCompatActivity() {
         mMediaPlayer = null
         isPlaying = false
 
-        mRecordThread = null
         mAudioRecord?.stop()
         mRecordThread = null
         mAudioRecord?.release()
@@ -488,6 +493,7 @@ class MainActivity : AppCompatActivity() {
 
         }
         pointsInGraphs = audioData.size.toLong()
+        numOfGraphs = index.toLong()
         println("index::" + index)
 
     }
