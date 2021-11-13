@@ -2,13 +2,11 @@ package com.example.animalsoundrecognition.soundprocessing
 
 import android.media.AudioRecord
 import ca.uol.aig.fftpack.RealDoubleFFT
-import com.example.animalsoundrecognition.MainActivity
-import com.example.animalsoundrecognition.MainActivity.Companion.isPlaying
-import com.example.animalsoundrecognition.MainActivity.Companion.mAudioRecord
-import com.example.animalsoundrecognition.MainActivity.Companion.mMinBufferSize
-import com.example.animalsoundrecognition.R
 import com.example.animalsoundrecognition.model.DataGraph
 import com.example.animalsoundrecognition.model.DataGraphs
+import com.example.animalsoundrecognition.soundprocessing.RecordHandler.Companion.isPlaying
+import com.example.animalsoundrecognition.soundprocessing.RecordHandler.Companion.isRecording
+import com.example.animalsoundrecognition.soundprocessing.RecordHandler.Companion.mMinBufferSize
 import com.jjoe64.graphview.GraphView
 import com.jjoe64.graphview.series.BaseSeries
 import com.jjoe64.graphview.series.DataPoint
@@ -17,20 +15,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
-class GraphHandler(graph: GraphView, graphTime: GraphView, graphFreqFull: GraphView) {
+class GraphHandler(val graph: GraphView, val graphTime: GraphView, val graphFreqFull: GraphView) {
     var dataGraphs: DataGraphs = DataGraphs()
-    val graph = graph
-    val graphTime = graphTime
-    val graphFreqFull = graphFreqFull
     var mFullFreqSeries: BaseSeries<DataPoint>? = null
     var mFreqSeries: BaseSeries<DataPoint>? = null
     var mTimeSeries: BaseSeries<DataPoint>? = null
     var pointsInGraphs: Long = 0
     var numOfGraphs: Long = 0
     var transformer: RealDoubleFFT? = null
-
-    init {
-    }
 
     fun initGraphView() {
         val graphSeries = LineGraphSeries<DataPoint>(arrayOf<DataPoint>())
@@ -59,10 +51,10 @@ class GraphHandler(graph: GraphView, graphTime: GraphView, graphFreqFull: GraphV
         graphFreqFull.addSeries(mFullFreqSeries)
     }
 
-    fun updateGraphView() {
+    fun updateGraphView(mAudioRecord:AudioRecord) {
         val audioData = ShortArray(mMinBufferSize)
         var index = 0
-        while (MainActivity.isRecording) {
+        while (isRecording) {
             val read = mAudioRecord!!.read(audioData, 0, mMinBufferSize)
             if (read != AudioRecord.ERROR_INVALID_OPERATION && read != AudioRecord.ERROR_BAD_VALUE) {
                 val num = audioData.size
@@ -100,7 +92,7 @@ class GraphHandler(graph: GraphView, graphTime: GraphView, graphFreqFull: GraphV
         println("index::" + index)
     }
 
-    fun replayGraphView(): Boolean {
+    fun replayGraphView(mAudioRecord:AudioRecord): Boolean {
         var index = 0
         val audioData = ShortArray(mMinBufferSize)
 

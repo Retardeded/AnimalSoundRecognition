@@ -2,37 +2,19 @@ package com.example.animalsoundrecognition
 
 import android.media.*
 import android.os.Bundle
-import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.EditText
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import ca.uol.aig.fftpack.RealDoubleFFT
-import com.example.animalsoundrecognition.model.DataGraph
-import com.example.animalsoundrecognition.model.DataGraphs
-import com.example.animalsoundrecognition.model.DataSound
-import com.example.animalsoundrecognition.server.SoundService
 import com.example.animalsoundrecognition.server.SoundServiceHandler
 import com.example.animalsoundrecognition.soundprocessing.GraphHandler
 import com.example.animalsoundrecognition.soundprocessing.RecordHandler
-import com.jjoe64.graphview.GraphView
-import com.jjoe64.graphview.series.BaseSeries
-import com.jjoe64.graphview.series.DataPoint
-import com.jjoe64.graphview.series.LineGraphSeries
+import com.example.animalsoundrecognition.soundprocessing.RecordHandler.Companion.isPlaying
+import com.example.animalsoundrecognition.soundprocessing.RecordHandler.Companion.isRecording
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import java.io.FileOutputStream
-import java.io.IOException
-
-
-//const val SAMPLE_RATE = 44100
-const val SAMPLE_RATE = 10100
-const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
-const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
 
 class MainActivity : AppCompatActivity() {
 
@@ -49,8 +31,6 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         animalNameText = findViewById(R.id.textAnimalName)
         textTest = findViewById(R.id.textTest)
-        mMinBufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
-
         textTest.text = "DEFAULT"
         serviceHandler = SoundServiceHandler()
         graphHandler = GraphHandler(findViewById(R.id.graph), findViewById(R.id.graphTime), findViewById(R.id.graphFreqFull))
@@ -144,14 +124,6 @@ class MainActivity : AppCompatActivity() {
     private fun changeMenuOptionVisibility(option: MenuItem, status:Boolean) {
         option.isEnabled = status
         option.isVisible = status
-    }
-
-
-    companion object {
-        var mAudioRecord: AudioRecord? = null
-        var isPlaying = false
-        var isRecording = false
-        var mMinBufferSize = 0
     }
 
 }
