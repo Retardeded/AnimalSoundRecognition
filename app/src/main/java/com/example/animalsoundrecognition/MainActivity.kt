@@ -182,8 +182,10 @@ class MainActivity : AppCompatActivity() {
         mAudioRecord = AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT, mMinBufferSize)
         mAudioRecord!!.startRecording()
 
-        mRecordThread = Thread(Runnable { replayGraphView() })
-        mRecordThread!!.start()
+        val playedOut = graphHandler.replayGraphView()
+        if(playedOut) {
+            stopPlaying()
+        }
         invalidateOptionsMenu()
     }
 
@@ -233,7 +235,7 @@ class MainActivity : AppCompatActivity() {
             start()
         }
 
-        mRecordThread = Thread(Runnable { updateGraphView() })
+        mRecordThread = Thread(Runnable { graphHandler.updateGraphView() })
         mRecordThread!!.start()
         soundStartingTime = System.currentTimeMillis()
         invalidateOptionsMenu()
@@ -259,115 +261,6 @@ class MainActivity : AppCompatActivity() {
         }
         recorder = null
         invalidateOptionsMenu()
-    }
-
-    private fun replayGraphView() {
-        var index = 0
-        val audioData = ShortArray(mMinBufferSize)
-
-        while (isPlaying && index < graphHandler.dataGraphs.currentRecordTimeDomain.size) {
-            val read = mAudioRecord!!.read(audioData, 0, mMinBufferSize)
-            if (read != AudioRecord.ERROR_INVALID_OPERATION && read != AudioRecord.ERROR_BAD_VALUE) {
-                val numTime =  graphHandler.dataGraphs.currentRecordTimeDomain[index].dataPoints.size
-                val dataTime = arrayOfNulls<DataPoint>(numTime)
-                val data = arrayOfNulls<DataPoint>(numTime)
-                for (i in 0 until numTime) {
-                    dataTime[i] = graphHandler.dataGraphs.currentRecordTimeDomain[index].dataPoints[i]
-                }
-                graphHandler.transformer = RealDoubleFFT(numTime)
-                val toTransform = DoubleArray(numTime)
-                for (i in 0 until numTime) {
-                    //toTransform[i] = audioData[i].toDouble() / Short.MAX_VALUE
-                    toTransform[i] = dataTime[i]!!.y
-                }
-                graphHandler.transformer!!.ft(toTransform)
-                for (i in 0 until numTime) {
-                    data[i] = DataPoint(i.toDouble(), toTransform[i])
-                }
-
-                this@MainActivity.runOnUiThread {
-                    graphHandler.mTimeSeries!!.resetData(dataTime)
-                    graphHandler.mFreqSeries!!.resetData(data)
-                }
-            }
-            index++
-        }
-
-
-        if(graphHandler.dataGraphs.currentRecordFullFreqDomain.size > 0)
-        {
-            val num =  graphHandler.dataGraphs.currentRecordFullFreqDomain[0].dataPoints.size
-            val data = arrayOfNulls<DataPoint>(num)
-            for (i in 0 until num) {
-                data[i] = graphHandler.dataGraphs.currentRecordFullFreqDomain[0].dataPoints[i]
-            }
-            this@MainActivity.runOnUiThread {
-                graphHandler.mFullFreqSeries!!.resetData(data)
-            }
-        }
-
-        stopPlaying()
-    }
-
-
-    private fun updateGraphView() {
-        val audioData = ShortArray(mMinBufferSize)
-        var index = 0
-        while (isRecording) {
-            val read = mAudioRecord!!.read(audioData, 0, mMinBufferSize)
-            if (read != AudioRecord.ERROR_INVALID_OPERATION && read != AudioRecord.ERROR_BAD_VALUE) {
-                val num = audioData.size
-                //os?.write(audioData, 0, mMinBufferSize);
-                val data = arrayOfNulls<DataPoint>(num)
-                val dataTime = arrayOfNulls<DataPoint>(num)
-                // apply Fast Fourier Transform here
-                graphHandler.transformer = RealDoubleFFT(num)
-                val toTransform = DoubleArray(num)
-                for (i in 0 until num) {
-                    //toTransform[i] = audioData[i].toDouble() / Short.MAX_VALUE
-                    toTransform[i] = audioData[i].toDouble()
-                }
-                graphHandler.transformer!!.ft(toTransform)
-                for (i in 0 until num) {
-                    data[i] = DataPoint(i.toDouble(), toTransform[i])
-                }
-
-                for (i in 0 until num) {
-                    dataTime[i] = DataPoint(i.toDouble(), audioData[i].toDouble())
-                }
-
-                val list: List<DataPoint> = data.toList().filterNotNull()
-                val listTime: List<DataPoint> = dataTime.toList().filterNotNull()
-
-                /*
-                println("size:" + num)
-                println("list:" + list )
-                var highPeak = list.maxByOrNull { it.y }
-                var lowPeak = list.minByOrNull { it.y }
-                println("max:" + highPeak)
-                println("min:" + lowPeak)
-                println("TIME")
-                println("size:" + num)
-                println("list:" + listTime)
-                var highPeakT = listTime.maxByOrNull { it.y }
-                var lowPeakT = listTime.minByOrNull { it.y }
-                println("max:" + highPeakT)
-                println("min:" + lowPeakT)
-                 */
-
-                index++
-                graphHandler.dataGraphs.currentRecordTimeDomain.add(DataGraph(listTime))
-
-                this@MainActivity.runOnUiThread {
-                    graphHandler.mFreqSeries!!.resetData(data)
-                    graphHandler.mTimeSeries!!.resetData(dataTime)
-                }
-            }
-
-        }
-        pointsInGraphs = audioData.size.toLong()
-        numOfGraphs = index.toLong()
-        println("index::" + index)
     }
 
     companion object {
