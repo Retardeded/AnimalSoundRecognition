@@ -39,8 +39,8 @@ class MainActivity : AppCompatActivity() {
     //.baseUrl("http://192.168.1.3:8080/")
     private lateinit var textTest:TextView
     private lateinit var animalNameText:EditText
-    var currentRecordFreqDomain:MutableList<DataGraph> = mutableListOf()
     var currentRecordTimeDomain:MutableList<DataGraph> = mutableListOf()
+    var currentRecordFullFreqDomain:MutableList<DataGraph> = mutableListOf()
     var soundStartingTime:Long = 0
     var currentDuration:Long = 0
 
@@ -51,6 +51,7 @@ class MainActivity : AppCompatActivity() {
     private var recorder: MediaRecorder? = null
     private var mMediaPlayer: MediaPlayer? = null
     private var mRecordThread: Thread? = null
+    private var mFullFreqSeries: BaseSeries<DataPoint>? = null
     private var mFreqSeries: BaseSeries<DataPoint>? = null
     private var mTimeSeries: BaseSeries<DataPoint>? = null
 
@@ -62,6 +63,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var graph: GraphView
     private lateinit var graphTime: GraphView
+    private lateinit var graphFreqFull:GraphView
     private var pointsInGraphs: Long = 0
     private var numOfGraphs: Long = 0
 
@@ -73,6 +75,7 @@ class MainActivity : AppCompatActivity() {
         textTest = findViewById(R.id.textTest)
         graph = findViewById(R.id.graph)
         graphTime = findViewById(R.id.graphTime)
+        graphFreqFull = findViewById(R.id.graphFreqFull)
         mMinBufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
 
         textTest.text = "DEFAULT"
@@ -114,9 +117,9 @@ class MainActivity : AppCompatActivity() {
                 val soundData = response.body()!!
                 val stringBuilder = soundData.toString();
                 textTest.text = stringBuilder
-                currentRecordFreqDomain = loadDataSound(soundData.freqDomainPoints)
-                currentRecordTimeDomain = loadDataSound(soundData.timeDomainPoints)
-            }
+                currentRecordTimeDomain = loadDataSound(soundData.pointsInGraphs, soundData.timeDomainPoints, false)
+                currentRecordFullFreqDomain = loadDataSound(soundData.pointsInGraphs, soundData.freqDomainPoints, true)
+             }
             else {
                 val text = "MSG:" + response.message() + "CAUSE: " + response.errorBody()
                 textTest.text = text
@@ -259,11 +262,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startPlaying() {
+        mFreqSeries?.resetData(arrayOf<DataPoint>())
+        mTimeSeries?.resetData(arrayOf<DataPoint>())
+        mFullFreqSeries?.resetData(arrayOf<DataPoint>())
+        /*
         val sound = createDataSound(true)
         val stringBuilder = sound.toString()
         GlobalScope.launch( Dispatchers.Main ){
             textTest.text = stringBuilder
         }
+
+         */
 
 
         mMediaPlayer = MediaPlayer().apply {
@@ -285,10 +294,20 @@ class MainActivity : AppCompatActivity() {
         invalidateOptionsMenu()
     }
 
-    private fun loadDataSound(soundData:List<DataPoint>): MutableList<DataGraph> {
+    private fun loadDataSound(pointsInGraphs:Long,soundData:List<DataPoint>, isFreqDomain:Boolean): MutableList<DataGraph> {
         val dataGraphs: MutableList<DataGraph> = mutableListOf()
-        val numberOfGraphs = (soundData.size / pointsInGraphs)-1
-        for (i in 0..numberOfGraphs) {
+        var pointsInGraphs = pointsInGraphs
+        var numberOfGraphs = (soundData.size / pointsInGraphs)
+        if(isFreqDomain) {
+            numberOfGraphs = 1
+            pointsInGraphs = soundData.size.toLong()-1
+        }
+
+        println(numberOfGraphs)
+        println(pointsInGraphs)
+        println(soundData.size)
+
+        for (i in 0..numberOfGraphs-1) {
             val graph = DataGraph(
                 soundData.subList(
                     ((i * pointsInGraphs).toInt()),
@@ -303,11 +322,6 @@ class MainActivity : AppCompatActivity() {
     private fun createDataSound(includeFreqDomain:Boolean): DataSound {
         val dataPoints: MutableList<DataPoint> = mutableListOf()
         val timePoints: MutableList<DataPoint> = mutableListOf()
-        if(includeFreqDomain) {
-            for (graphs in currentRecordFreqDomain) {
-                dataPoints.addAll(graphs.dataPoints)
-            }
-        }
         for (graphs in currentRecordTimeDomain) {
             timePoints.addAll(graphs.dataPoints)
         }
@@ -324,15 +338,13 @@ class MainActivity : AppCompatActivity() {
         mRecordThread = null
         mAudioRecord?.release()
         mAudioRecord = null
-        mFreqSeries?.resetData(arrayOf<DataPoint>())
-        mTimeSeries?.resetData(arrayOf<DataPoint>())
+        //mFreqSeries?.resetData(arrayOf<DataPoint>())
+        //mTimeSeries?.resetData(arrayOf<DataPoint>())
         invalidateOptionsMenu()
     }
 
 
     private fun startRecording() {
-
-        currentRecordFreqDomain.clear()
         currentRecordTimeDomain.clear()
         mAudioRecord = AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT, mMinBufferSize)
         mAudioRecord!!.startRecording()
@@ -390,6 +402,9 @@ class MainActivity : AppCompatActivity() {
         graphTime.title = "Time Domain"
         mTimeSeries = LineGraphSeries<DataPoint>(arrayOf<DataPoint>())
 
+        graphFreqFull.title = "Full Signal Frequency Domain"
+        mFullFreqSeries = LineGraphSeries<DataPoint>(arrayOf<DataPoint>())
+
         if (graph.series.count() > 0) {
             graph.removeAllSeries()
         }
@@ -399,35 +414,59 @@ class MainActivity : AppCompatActivity() {
             graphTime.removeAllSeries()
         }
         graphTime.addSeries(mTimeSeries)
+
+        if (graphFreqFull.series.count() > 0) {
+            graphFreqFull.removeAllSeries()
+        }
+        graphFreqFull.addSeries(mFullFreqSeries)
     }
 
 
     private fun replayGraphView() {
         var index = 0
         val audioData = ShortArray(mMinBufferSize)
-        while (isPlaying && index < currentRecordFreqDomain.size || index < currentRecordTimeDomain.size) {
+
+        while (isPlaying && index < currentRecordTimeDomain.size) {
             val read = mAudioRecord!!.read(audioData, 0, mMinBufferSize)
             if (read != AudioRecord.ERROR_INVALID_OPERATION && read != AudioRecord.ERROR_BAD_VALUE) {
-                val num =  currentRecordFreqDomain[index].dataPoints.size
                 val numTime =  currentRecordTimeDomain[index].dataPoints.size
-                //os?.write(audioData, 0, mMinBufferSize);
-                val data = arrayOfNulls<DataPoint>(num)
-                val dataTime = arrayOfNulls<DataPoint>(num)
-                for (i in 0 until num) {
-                    data[i] = currentRecordFreqDomain[index].dataPoints[i]
-                }
-
+                val dataTime = arrayOfNulls<DataPoint>(numTime)
+                val data = arrayOfNulls<DataPoint>(numTime)
                 for (i in 0 until numTime) {
                     dataTime[i] = currentRecordTimeDomain[index].dataPoints[i]
                 }
+                transformer = RealDoubleFFT(numTime)
+                val toTransform = DoubleArray(numTime)
+                for (i in 0 until numTime) {
+                    //toTransform[i] = audioData[i].toDouble() / Short.MAX_VALUE
+                    toTransform[i] = dataTime[i]!!.y
+                }
+                transformer!!.ft(toTransform)
+                for (i in 0 until numTime) {
+                    data[i] = DataPoint(i.toDouble(), toTransform[i])
+                }
 
                 this@MainActivity.runOnUiThread {
-                    mFreqSeries!!.resetData(data)
                     mTimeSeries!!.resetData(dataTime)
+                    mFreqSeries!!.resetData(data)
                 }
             }
             index++
         }
+
+
+        if(currentRecordFullFreqDomain.size > 0)
+        {
+            val num =  currentRecordFullFreqDomain[0].dataPoints.size
+            val data = arrayOfNulls<DataPoint>(num)
+            for (i in 0 until num) {
+                data[i] = currentRecordFullFreqDomain[0].dataPoints[i]
+            }
+            this@MainActivity.runOnUiThread {
+                mFullFreqSeries!!.resetData(data)
+            }
+        }
+
         stopPlaying()
     }
 
@@ -477,9 +516,6 @@ class MainActivity : AppCompatActivity() {
                  */
 
                 index++
-
-
-                currentRecordFreqDomain.add(DataGraph(list))
                 currentRecordTimeDomain.add(DataGraph(listTime))
 
                 this@MainActivity.runOnUiThread {
@@ -492,7 +528,6 @@ class MainActivity : AppCompatActivity() {
         pointsInGraphs = audioData.size.toLong()
         numOfGraphs = index.toLong()
         println("index::" + index)
-
     }
 
 }
