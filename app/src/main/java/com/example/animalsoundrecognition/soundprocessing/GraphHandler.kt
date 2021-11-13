@@ -25,8 +25,8 @@ class GraphHandler(graph: GraphView, graphTime: GraphView, graphFreqFull: GraphV
     var mFullFreqSeries: BaseSeries<DataPoint>? = null
     var mFreqSeries: BaseSeries<DataPoint>? = null
     var mTimeSeries: BaseSeries<DataPoint>? = null
-    private var pointsInGraphs: Long = 0
-    private var numOfGraphs: Long = 0
+    var pointsInGraphs: Long = 0
+    var numOfGraphs: Long = 0
     var transformer: RealDoubleFFT? = null
 
     init {
@@ -143,7 +143,6 @@ class GraphHandler(graph: GraphView, graphTime: GraphView, graphFreqFull: GraphV
             }
         }
         return true
-        //stopPlaying()
     }
 
 }

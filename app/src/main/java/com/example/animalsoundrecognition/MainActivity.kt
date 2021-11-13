@@ -15,6 +15,7 @@ import com.example.animalsoundrecognition.model.DataSound
 import com.example.animalsoundrecognition.server.SoundService
 import com.example.animalsoundrecognition.server.SoundServiceHandler
 import com.example.animalsoundrecognition.soundprocessing.GraphHandler
+import com.example.animalsoundrecognition.soundprocessing.RecordHandler
 import com.jjoe64.graphview.GraphView
 import com.jjoe64.graphview.series.BaseSeries
 import com.jjoe64.graphview.series.DataPoint
@@ -35,40 +36,22 @@ const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
 
 class MainActivity : AppCompatActivity() {
 
+    lateinit var recordHandler:RecordHandler
     lateinit var serviceHandler:SoundServiceHandler
     lateinit var graphHandler:GraphHandler
-    private lateinit var textTest:TextView
-    private lateinit var animalNameText:EditText
-    var soundStartingTime:Long = 0
-    var currentDuration:Long = 0
 
-    private var fileName: String = ""
-    var os: FileOutputStream? = null
-
-    private var recorder: MediaRecorder? = null
-    private var mMediaPlayer: MediaPlayer? = null
-    private var mRecordThread: Thread? = null
-
-    private var pointsInGraphs: Long = 0
-    private var numOfGraphs: Long = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
         animalNameText = findViewById(R.id.textAnimalName)
         textTest = findViewById(R.id.textTest)
         mMinBufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
 
         textTest.text = "DEFAULT"
-        fileName = "${externalCacheDir?.absolutePath}/audiorecordtest.3gp"
-        createServiceHandler()
-        graphHandler = GraphHandler(findViewById(R.id.graph), findViewById(R.id.graphTime), findViewById(R.id.graphFreqFull))
-    }
-
-
-    fun createServiceHandler() {
         serviceHandler = SoundServiceHandler()
+        graphHandler = GraphHandler(findViewById(R.id.graph), findViewById(R.id.graphTime), findViewById(R.id.graphFreqFull))
+        recordHandler = RecordHandler(graphHandler, "${externalCacheDir?.absolutePath}/audiorecordtest.3gp")
     }
 
     override fun onStart() {
@@ -78,7 +61,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        stopRecording()
+        recordHandler.stopRecording()
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -91,23 +74,27 @@ class MainActivity : AppCompatActivity() {
         GlobalScope.launch(Dispatchers.IO) {
             when (item?.itemId) {
                 R.id.device_access_mic -> {
-                    startRecording()
+                    recordHandler.startRecording()
+                    invalidateOptionsMenu()
                 }
                 R.id.device_access_mic_muted -> {
-                    stopRecording()
+                    recordHandler.stopRecording()
+                    invalidateOptionsMenu()
                 }
                 R.id.device_access_audio_play -> {
-                    startPlaying()
+                    recordHandler.startPlaying()
+                    invalidateOptionsMenu()
                 }
                 R.id.device_access_audio_stop -> {
-                    stopPlaying()
+                    recordHandler.stopPlaying()
+                    invalidateOptionsMenu()
                 }
                 R.id.upload_sound -> {
-                    val sound = createDataSound(false)
+                    val sound = recordHandler.createDataSound(true)
                     serviceHandler.postSound(textTest, sound)
                 }
                 R.id.check_sound -> {
-                    val sound = createDataSound(false)
+                    val sound = recordHandler.createDataSound(true)
                     serviceHandler.checkSound(textTest, sound)
                 }
                 R.id.get_sound_types -> {
@@ -156,114 +143,10 @@ class MainActivity : AppCompatActivity() {
         option.isVisible = status
     }
 
-    private fun startPlaying() {
-        graphHandler.mFreqSeries?.resetData(arrayOf<DataPoint>())
-        graphHandler.mTimeSeries?.resetData(arrayOf<DataPoint>())
-        graphHandler.mFullFreqSeries?.resetData(arrayOf<DataPoint>())
-        /*
-        val sound = createDataSound(true)
-        val stringBuilder = sound.toString()
-        GlobalScope.launch( Dispatchers.Main ){
-            textTest.text = stringBuilder
-        }
-         */
-
-        mMediaPlayer = MediaPlayer().apply {
-            try {
-                setDataSource(fileName)
-                prepare()
-                start()
-            } catch (e: IOException) {
-                Log.e("", "prepare() failed")
-            }
-        }
-        isPlaying = true
-
-        mAudioRecord = AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT, mMinBufferSize)
-        mAudioRecord!!.startRecording()
-
-        val playedOut = graphHandler.replayGraphView()
-        if(playedOut) {
-            stopPlaying()
-        }
-        invalidateOptionsMenu()
-    }
-
-    private fun createDataSound(includeFreqDomain:Boolean): DataSound {
-        val dataPoints: MutableList<DataPoint> = mutableListOf()
-        val timePoints: MutableList<DataPoint> = mutableListOf()
-        for (graphs in graphHandler.dataGraphs.currentRecordTimeDomain) {
-            timePoints.addAll(graphs.dataPoints)
-        }
-        val sound = DataSound(animalNameText.text.toString(), currentDuration, pointsInGraphs, numOfGraphs, dataPoints, timePoints)
-        return sound
-    }
-
-    private fun stopPlaying() {
-        mMediaPlayer?.release()
-        mMediaPlayer = null
-        isPlaying = false
-
-        mAudioRecord?.stop()
-        mRecordThread = null
-        mAudioRecord?.release()
-        mAudioRecord = null
-        //mFreqSeries?.resetData(arrayOf<DataPoint>())
-        //mTimeSeries?.resetData(arrayOf<DataPoint>())
-        invalidateOptionsMenu()
-    }
-
-
-    private fun startRecording() {
-        graphHandler.dataGraphs.currentRecordTimeDomain.clear()
-        mAudioRecord = AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT, mMinBufferSize)
-        mAudioRecord!!.startRecording()
-        isRecording = true
-
-        recorder = MediaRecorder().apply {
-            setAudioSource(MediaRecorder.AudioSource.MIC)
-            setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
-            setOutputFile(fileName)
-            setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
-
-            try {
-                prepare()
-            } catch (e: IOException) {
-                Log.e("tag", "prepare() failed")
-            }
-
-            start()
-        }
-
-        mRecordThread = Thread(Runnable { graphHandler.updateGraphView() })
-        mRecordThread!!.start()
-        soundStartingTime = System.currentTimeMillis()
-        invalidateOptionsMenu()
-    }
-
-    private fun stopRecording() {
-        currentDuration = System.currentTimeMillis() - soundStartingTime
-        if (mAudioRecord != null) {
-            if (isRecording) {
-                mAudioRecord?.stop()
-                isRecording = false
-                mRecordThread = null
-            }
-            mAudioRecord?.release()
-            mAudioRecord = null
-            graphHandler.mFreqSeries?.resetData(arrayOf<DataPoint>())
-            graphHandler.mTimeSeries?.resetData(arrayOf<DataPoint>())
-        }
-
-        recorder?.apply {
-            stop()
-            release()
-        }
-        recorder = null
-        invalidateOptionsMenu()
-    }
 
     companion object {
+        lateinit var textTest:TextView
+        lateinit var animalNameText:EditText
         var mAudioRecord: AudioRecord? = null
         var isPlaying = false
         var isRecording = false
