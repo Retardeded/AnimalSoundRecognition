@@ -10,7 +10,10 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import ca.uol.aig.fftpack.RealDoubleFFT
 import com.example.animalsoundrecognition.model.DataGraph
+import com.example.animalsoundrecognition.model.DataGraphs
 import com.example.animalsoundrecognition.model.DataSound
+import com.example.animalsoundrecognition.server.SoundService
+import com.example.animalsoundrecognition.server.SoundServiceHandler
 import com.jjoe64.graphview.GraphView
 import com.jjoe64.graphview.series.BaseSeries
 import com.jjoe64.graphview.series.DataPoint
@@ -31,16 +34,19 @@ const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
 
 class MainActivity : AppCompatActivity() {
 
-    lateinit var service:SoundService
+    /*
+    lateinit var service: SoundService
     //var okHttpClient: OkHttpClient? = null
     // tutaj ustaw swoje lokalne ip
     val ipString = "http://192.168.1.3:8080"
     //.baseUrl("http://10.0.0.5:8080/")
     //.baseUrl("http://192.168.1.3:8080/")
+
+     */
+    lateinit var serviceHandler:SoundServiceHandler
     private lateinit var textTest:TextView
     private lateinit var animalNameText:EditText
-    var currentRecordTimeDomain:MutableList<DataGraph> = mutableListOf()
-    var currentRecordFullFreqDomain:MutableList<DataGraph> = mutableListOf()
+    var dataGraphs:DataGraphs = DataGraphs()
     var soundStartingTime:Long = 0
     var currentDuration:Long = 0
 
@@ -80,34 +86,15 @@ class MainActivity : AppCompatActivity() {
 
         textTest.text = "DEFAULT"
         fileName = "${externalCacheDir?.absolutePath}/audiorecordtest.3gp"
-        createClient()
+        createServiceHandler()
     }
 
-    fun createClient() {
-        val retrofit = Retrofit.Builder()
-            .baseUrl(ipString)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
 
-        service = retrofit.create(SoundService::class.java)
+    fun createServiceHandler() {
+        serviceHandler = SoundServiceHandler()
     }
 
-    suspend fun getSounds() {
-        val response = service.getSounds()
-        GlobalScope.launch(Dispatchers.Main) {
-            if (response.isSuccessful) {
-                textTest.text = response.toString()
-                val quiz = response.body()!!
-                val stringBuilder = quiz.toString();
-                textTest.text = stringBuilder
-            }
-            else {
-                val text = "MSG:" + response.message() + "CAUSE: " + response.errorBody()
-                textTest.text = text
-            }
-        }
-    }
-
+    /*
     suspend fun getSound() {
         val id = animalNameText.text.toString()
         val response = service.getSound(id)
@@ -127,54 +114,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    suspend fun deleteSound() {
-        val id = animalNameText.text.toString()
-        val response = service.deleteSound(id)
-        GlobalScope.launch(Dispatchers.Main) {
-            if (response.isSuccessful) {
-                textTest.text = response.toString()
-            }
-            else {
-                val text = "MSG:" + response.message() + "CAUSE: " + response.errorBody()
-                textTest.text = text
-            }
-        }
-    }
-
-    suspend fun postSound() {
-        val sound = createDataSound(false)
-        val response = service.postSound(sound)
-        GlobalScope.launch(Dispatchers.Main) {
-            if (response.isSuccessful) {
-                textTest.text = response.toString()
-                val dataSound = response.body()!!
-                val stringBuilder = dataSound.toString();
-                textTest.text = stringBuilder
-            }
-            else {
-                val text = "MSG:" + response.message() + "CAUSE: " + response.errorBody()
-                textTest.text = text
-            }
-        }
-
-    }
-
-    suspend fun checkSound() {
-        val sound = createDataSound(false)
-        val response = service.checkSound(sound)
-        GlobalScope.launch(Dispatchers.Main) {
-            if (response.isSuccessful) {
-                textTest.text = response.toString()
-                val dataSound = response.body()!!
-                val stringBuilder = dataSound.toString();
-                textTest.text = stringBuilder
-            }
-            else {
-                val text = "MSG:" + response.message() + "CAUSE: " + response.errorBody()
-                textTest.text = text
-            }
-        }
-    }
+     */
 
 
 
@@ -210,19 +150,21 @@ class MainActivity : AppCompatActivity() {
                     stopPlaying()
                 }
                 R.id.upload_sound -> {
-                    postSound()
+                    val sound = createDataSound(false)
+                    serviceHandler.postSound(textTest, sound)
                 }
                 R.id.check_sound -> {
-                    checkSound()
+                    val sound = createDataSound(false)
+                    serviceHandler.checkSound(textTest, sound)
                 }
                 R.id.get_sound_types -> {
-                    getSounds()
+                    serviceHandler.getSounds(textTest)
                 }
                 R.id.get_sound -> {
-                    getSound()
+                    serviceHandler.getSound(textTest, animalNameText, dataGraphs)
                 }
                 R.id.delete_sound -> {
-                    deleteSound()
+                    serviceHandler.deleteSound(textTest, animalNameText)
                 }
             }
             return@launch
@@ -294,35 +236,10 @@ class MainActivity : AppCompatActivity() {
         invalidateOptionsMenu()
     }
 
-    private fun loadDataSound(pointsInGraphs:Long,soundData:List<DataPoint>, isFreqDomain:Boolean): MutableList<DataGraph> {
-        val dataGraphs: MutableList<DataGraph> = mutableListOf()
-        var pointsInGraphs = pointsInGraphs
-        var numberOfGraphs = (soundData.size / pointsInGraphs)
-        if(isFreqDomain) {
-            numberOfGraphs = 1
-            pointsInGraphs = soundData.size.toLong()-1
-        }
-
-        println(numberOfGraphs)
-        println(pointsInGraphs)
-        println(soundData.size)
-
-        for (i in 0..numberOfGraphs-1) {
-            val graph = DataGraph(
-                soundData.subList(
-                    ((i * pointsInGraphs).toInt()),
-                    ((i + 1) * pointsInGraphs).toInt()
-                )
-            )
-            dataGraphs.add(graph)
-        }
-        return dataGraphs
-    }
-
     private fun createDataSound(includeFreqDomain:Boolean): DataSound {
         val dataPoints: MutableList<DataPoint> = mutableListOf()
         val timePoints: MutableList<DataPoint> = mutableListOf()
-        for (graphs in currentRecordTimeDomain) {
+        for (graphs in dataGraphs.currentRecordTimeDomain) {
             timePoints.addAll(graphs.dataPoints)
         }
         val sound = DataSound(animalNameText.text.toString(), currentDuration, pointsInGraphs, numOfGraphs, dataPoints, timePoints)
@@ -345,7 +262,7 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun startRecording() {
-        currentRecordTimeDomain.clear()
+        dataGraphs.currentRecordTimeDomain.clear()
         mAudioRecord = AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT, mMinBufferSize)
         mAudioRecord!!.startRecording()
         isRecording = true
@@ -426,14 +343,14 @@ class MainActivity : AppCompatActivity() {
         var index = 0
         val audioData = ShortArray(mMinBufferSize)
 
-        while (isPlaying && index < currentRecordTimeDomain.size) {
+        while (isPlaying && index < dataGraphs.currentRecordTimeDomain.size) {
             val read = mAudioRecord!!.read(audioData, 0, mMinBufferSize)
             if (read != AudioRecord.ERROR_INVALID_OPERATION && read != AudioRecord.ERROR_BAD_VALUE) {
-                val numTime =  currentRecordTimeDomain[index].dataPoints.size
+                val numTime =  dataGraphs.currentRecordTimeDomain[index].dataPoints.size
                 val dataTime = arrayOfNulls<DataPoint>(numTime)
                 val data = arrayOfNulls<DataPoint>(numTime)
                 for (i in 0 until numTime) {
-                    dataTime[i] = currentRecordTimeDomain[index].dataPoints[i]
+                    dataTime[i] = dataGraphs.currentRecordTimeDomain[index].dataPoints[i]
                 }
                 transformer = RealDoubleFFT(numTime)
                 val toTransform = DoubleArray(numTime)
@@ -455,12 +372,12 @@ class MainActivity : AppCompatActivity() {
         }
 
 
-        if(currentRecordFullFreqDomain.size > 0)
+        if(dataGraphs.currentRecordFullFreqDomain.size > 0)
         {
-            val num =  currentRecordFullFreqDomain[0].dataPoints.size
+            val num =  dataGraphs.currentRecordFullFreqDomain[0].dataPoints.size
             val data = arrayOfNulls<DataPoint>(num)
             for (i in 0 until num) {
-                data[i] = currentRecordFullFreqDomain[0].dataPoints[i]
+                data[i] = dataGraphs.currentRecordFullFreqDomain[0].dataPoints[i]
             }
             this@MainActivity.runOnUiThread {
                 mFullFreqSeries!!.resetData(data)
@@ -516,7 +433,7 @@ class MainActivity : AppCompatActivity() {
                  */
 
                 index++
-                currentRecordTimeDomain.add(DataGraph(listTime))
+                dataGraphs.currentRecordTimeDomain.add(DataGraph(listTime))
 
                 this@MainActivity.runOnUiThread {
                     mFreqSeries!!.resetData(data)

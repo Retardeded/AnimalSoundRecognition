@@ -1,4 +1,4 @@
-package com.example.animalsoundrecognition
+package com.example.animalsoundrecognition.server
 
 import com.example.animalsoundrecognition.model.DataSound
 import retrofit2.http.Body
