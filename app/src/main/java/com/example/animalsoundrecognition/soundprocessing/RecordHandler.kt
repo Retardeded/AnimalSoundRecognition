@@ -8,8 +8,6 @@ import android.widget.TextView
 import com.example.animalsoundrecognition.AUDIO_FORMAT
 import com.example.animalsoundrecognition.CHANNEL_CONFIG
 import com.example.animalsoundrecognition.MainActivity
-import com.example.animalsoundrecognition.MainActivity.Companion.animalNameText
-import com.example.animalsoundrecognition.MainActivity.Companion.textTest
 import com.example.animalsoundrecognition.SAMPLE_RATE
 import com.example.animalsoundrecognition.model.DataSound
 import com.jjoe64.graphview.series.DataPoint
@@ -28,12 +26,12 @@ class RecordHandler(val graphHandler: GraphHandler, val fileName:String) {
 
 
 
-    fun startPlaying() {
+    fun startPlaying(textTest: TextView, animalNameText: TextView) {
         graphHandler.mFreqSeries?.resetData(arrayOf<DataPoint>())
         graphHandler.mTimeSeries?.resetData(arrayOf<DataPoint>())
         graphHandler.mFullFreqSeries?.resetData(arrayOf<DataPoint>())
 
-        val sound = createDataSound(true)
+        val sound = createDataSound(true, animalNameText)
         val stringBuilder = sound.toString()
         GlobalScope.launch( Dispatchers.Main ){
             textTest.text = stringBuilder
@@ -119,7 +117,7 @@ class RecordHandler(val graphHandler: GraphHandler, val fileName:String) {
         recorder = null
     }
 
-    fun createDataSound(includeGraph:Boolean): DataSound {
+    fun createDataSound(includeGraph:Boolean, animalNameText: TextView): DataSound {
         val dataPoints: MutableList<DataPoint> = mutableListOf()
         val timePoints: MutableList<DataPoint> = mutableListOf()
         if(includeGraph) {

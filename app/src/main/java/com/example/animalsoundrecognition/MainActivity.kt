@@ -40,6 +40,9 @@ class MainActivity : AppCompatActivity() {
     lateinit var serviceHandler:SoundServiceHandler
     lateinit var graphHandler:GraphHandler
 
+    lateinit var textTest:TextView
+    lateinit var animalNameText:EditText
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,7 +85,7 @@ class MainActivity : AppCompatActivity() {
                     invalidateOptionsMenu()
                 }
                 R.id.device_access_audio_play -> {
-                    recordHandler.startPlaying()
+                    recordHandler.startPlaying(textTest, animalNameText)
                     invalidateOptionsMenu()
                 }
                 R.id.device_access_audio_stop -> {
@@ -90,11 +93,11 @@ class MainActivity : AppCompatActivity() {
                     invalidateOptionsMenu()
                 }
                 R.id.upload_sound -> {
-                    val sound = recordHandler.createDataSound(true)
+                    val sound = recordHandler.createDataSound(true, animalNameText)
                     serviceHandler.postSound(textTest, sound)
                 }
                 R.id.check_sound -> {
-                    val sound = recordHandler.createDataSound(true)
+                    val sound = recordHandler.createDataSound(true, animalNameText)
                     serviceHandler.checkSound(textTest, sound)
                 }
                 R.id.get_sound_types -> {
@@ -145,8 +148,6 @@ class MainActivity : AppCompatActivity() {
 
 
     companion object {
-        lateinit var textTest:TextView
-        lateinit var animalNameText:EditText
         var mAudioRecord: AudioRecord? = null
         var isPlaying = false
         var isRecording = false
