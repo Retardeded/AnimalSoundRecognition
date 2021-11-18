@@ -77,7 +77,9 @@ class GraphHandler(val graph: GraphView, val graphTime: GraphView, val graphFreq
                     dataTime[i] = DataPoint(i.toDouble(), audioData[i].toDouble())
                 }
 
+
                 val listTime: List<DataPoint> = dataTime.toList().filterNotNull()
+                //println("LIST::::::::::$listTime")
                 index++
                 dataGraphs.currentRecordTimeDomain.add(DataGraph(listTime))
                 GlobalScope.launch( Dispatchers.Main ){
