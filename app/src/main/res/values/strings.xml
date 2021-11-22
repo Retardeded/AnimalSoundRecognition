@@ -60,4 +60,5 @@
     <string name="get_sounds">Get Sound Types</string>
     <string name="get_sound">Get Sound(type correct id)</string>
     <string name="delete_sound">Remove Sound(type correct id)</string>
+    <string name="check_animal_freq">Recognize Animal(Freq domain)</string>
 </resources>

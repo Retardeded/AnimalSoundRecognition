@@ -144,4 +144,25 @@ class SoundServiceHandler {
             }
         }
     }
+
+    suspend fun checkSoundFreqDomain(textTest: TextView, dataSound:DataSound) {
+        val sound = dataSound
+        val response = service.checkSoundFreqDomain(sound)
+        GlobalScope.launch(Dispatchers.Main) {
+            if (response.isSuccessful) {
+                textTest.text = response.toString()
+                val mostSimilarSoundsList = response.body()!!
+                var text:String = "d\n"
+                for (sound in mostSimilarSoundsList) {
+                    text += "Sound info:\n" + sound.first + "\n"
+                    text += "Correlation info:\n" + sound.second + "\n"
+                }
+                textTest.text = text
+            }
+            else {
+                val text = "MSG:" + response.message() + "CAUSE: " + response.errorBody()
+                textTest.text = text
+            }
+        }
+    }
 }

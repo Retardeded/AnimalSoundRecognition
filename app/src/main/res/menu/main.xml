@@ -31,6 +31,11 @@
         app:showAsAction="ifRoom"
         android:enabled="true"
         android:visible="true" />
+    <item android:id="@+id/check_sound_freq"
+        android:title="@string/check_animal_freq"
+        app:showAsAction="ifRoom"
+        android:enabled="true"
+        android:visible="true" />
     <item android:id="@+id/get_sound_types"
         android:title="@string/get_sounds"
         app:showAsAction="ifRoom"
