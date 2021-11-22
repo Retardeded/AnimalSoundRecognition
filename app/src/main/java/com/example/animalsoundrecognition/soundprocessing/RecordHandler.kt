@@ -64,6 +64,7 @@ class RecordHandler(val graphHandler: GraphHandler, val fileName:String) {
         mMediaPlayer?.release()
         mMediaPlayer = null
         isPlaying = false
+        Thread.sleep(100)
 
         mAudioRecord?.stop()
         mRecordThread = null
@@ -105,6 +106,7 @@ class RecordHandler(val graphHandler: GraphHandler, val fileName:String) {
             if (isRecording) {
                 mAudioRecord?.stop()
                 isRecording = false
+                Thread.sleep(100)
                 mRecordThread = null
             }
             mAudioRecord?.release()

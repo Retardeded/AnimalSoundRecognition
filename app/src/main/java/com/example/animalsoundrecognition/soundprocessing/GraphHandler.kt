@@ -25,25 +25,34 @@ class GraphHandler(val graph: GraphView, val graphTime: GraphView, val graphFreq
     var transformer: RealDoubleFFT? = null
 
     fun initGraphView() {
+        graphTime.title = "Time Domain"
+        graphTime.viewport.setMaxY(10000.0)
+        graphTime.viewport.setMinY(-10000.0)
+        graphTime.viewport.isYAxisBoundsManual = true
+        mTimeSeries = LineGraphSeries<DataPoint>(arrayOf<DataPoint>())
+
         val graphSeries = LineGraphSeries<DataPoint>(arrayOf<DataPoint>())
         mFreqSeries = graphSeries
         graph.title = "Frequency Domain"
-
-        graphTime.title = "Time Domain"
-        mTimeSeries = LineGraphSeries<DataPoint>(arrayOf<DataPoint>())
+        graph.viewport.setMaxY(1500.0)
+        graph.viewport.setMinY(-1500.0)
+        graph.viewport.isYAxisBoundsManual = true
 
         graphFreqFull.title = "Full Signal Frequency Domain"
         mFullFreqSeries = LineGraphSeries<DataPoint>(arrayOf<DataPoint>())
-
-        if (graph.series.count() > 0) {
-            graph.removeAllSeries()
-        }
-        graph.addSeries(mFreqSeries)
+        graphFreqFull.viewport.setMaxY(250.0)
+        graphFreqFull.viewport.setMinY(-250.0)
+        graphFreqFull.viewport.isYAxisBoundsManual = true
 
         if (graphTime.series.count() > 0) {
             graphTime.removeAllSeries()
         }
         graphTime.addSeries(mTimeSeries)
+
+        if (graph.series.count() > 0) {
+            graph.removeAllSeries()
+        }
+        graph.addSeries(mFreqSeries)
 
         if (graphFreqFull.series.count() > 0) {
             graphFreqFull.removeAllSeries()
@@ -65,8 +74,8 @@ class GraphHandler(val graph: GraphView, val graphTime: GraphView, val graphFreq
                 transformer = RealDoubleFFT(num)
                 val toTransform = DoubleArray(num)
                 for (i in 0 until num) {
-                    //toTransform[i] = audioData[i].toDouble() / Short.MAX_VALUE
-                    toTransform[i] = audioData[i].toDouble()
+                    toTransform[i] = audioData[i].toDouble() / num
+                    //toTransform[i] = audioData[i].toDouble()
                 }
                 transformer!!.ft(toTransform)
                 for (i in 0 until num) {
@@ -109,8 +118,8 @@ class GraphHandler(val graph: GraphView, val graphTime: GraphView, val graphFreq
             transformer = RealDoubleFFT(numTime)
             val toTransform = DoubleArray(numTime)
             for (i in 0 until numTime) {
-                //toTransform[i] = audioData[i].toDouble() / Short.MAX_VALUE
-                toTransform[i] = dataTime[i]!!.y
+                toTransform[i] = dataTime[i]!!.y / numTime
+                //toTransform[i] = dataTime[i]!!.y
             }
             transformer!!.ft(toTransform)
             for (i in 0 until numTime) {
