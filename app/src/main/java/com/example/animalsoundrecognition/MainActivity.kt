@@ -33,7 +33,7 @@ class MainActivity : AppCompatActivity() {
         textTest = findViewById(R.id.textTest)
         textTest.text = "DEFAULT"
         serviceHandler = SoundServiceHandler()
-        graphHandler = GraphHandler(findViewById(R.id.graph), findViewById(R.id.graphTime), findViewById(R.id.graphFreqFull))
+        graphHandler = GraphHandler(findViewById(R.id.graphAplitude),findViewById(R.id.graphPhase), findViewById(R.id.graphTime), findViewById(R.id.graphFreqFull))
         recordHandler = RecordHandler(graphHandler, "${externalCacheDir?.absolutePath}/audiorecordtest.3gp")
     }
 

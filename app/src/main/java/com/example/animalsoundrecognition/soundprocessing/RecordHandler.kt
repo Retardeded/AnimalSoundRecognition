@@ -6,7 +6,6 @@ import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.util.Log
 import android.widget.TextView
-import com.example.animalsoundrecognition.MainActivity
 
 import com.example.animalsoundrecognition.model.DataSound
 import com.jjoe64.graphview.series.DataPoint
@@ -31,7 +30,7 @@ class RecordHandler(val graphHandler: GraphHandler, val fileName:String) {
 
 
     fun startPlaying(textTest: TextView, animalNameText: TextView) {
-        graphHandler.mFreqSeries?.resetData(arrayOf<DataPoint>())
+        graphHandler.mAmplitudeSeries?.resetData(arrayOf<DataPoint>())
         graphHandler.mTimeSeries?.resetData(arrayOf<DataPoint>())
         graphHandler.mFullFreqSeries?.resetData(arrayOf<DataPoint>())
 
@@ -111,7 +110,7 @@ class RecordHandler(val graphHandler: GraphHandler, val fileName:String) {
             }
             mAudioRecord?.release()
             mAudioRecord = null
-            graphHandler.mFreqSeries?.resetData(arrayOf<DataPoint>())
+            graphHandler.mAmplitudeSeries?.resetData(arrayOf<DataPoint>())
             graphHandler.mTimeSeries?.resetData(arrayOf<DataPoint>())
         }
 

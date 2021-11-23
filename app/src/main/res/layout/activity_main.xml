@@ -46,7 +46,13 @@
         </com.jjoe64.graphview.GraphView>
 
         <com.jjoe64.graphview.GraphView
-            android:id="@+id/graph"
+            android:id="@+id/graphAplitude"
+            android:layout_width="wrap_content"
+            android:layout_height="250dp">
+        </com.jjoe64.graphview.GraphView>
+
+        <com.jjoe64.graphview.GraphView
+            android:id="@+id/graphPhase"
             android:layout_width="wrap_content"
             android:layout_height="250dp">
         </com.jjoe64.graphview.GraphView>
