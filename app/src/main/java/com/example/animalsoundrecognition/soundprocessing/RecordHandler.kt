@@ -73,6 +73,7 @@ class RecordHandler(val graphHandler: GraphHandler, val fileName:String) {
 
     fun startRecording() {
         graphHandler.dataGraphs.currentRecordTimeDomain.clear()
+        graphHandler.dataGraphs.currentRecordFullFreqDomain.clear()
         mAudioRecord = AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT,
             mMinBufferSize
         )

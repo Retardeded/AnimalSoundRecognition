@@ -76,11 +76,11 @@ class GraphHandler(val graphAmplitude: GraphView, val graphPhase:GraphView, val 
     fun updateGraphView(mAudioRecord:AudioRecord) {
         val audioData = ShortArray(mMinBufferSize)
         var index = 0
-        val dataFull = DoubleArray(audioData.size)
+        val num = audioData.size
+        val dataAmplitudeFullSignal = DoubleArray(num/2)
         while (isRecording) {
             val read = mAudioRecord!!.read(audioData, 0, mMinBufferSize)
             if (read != AudioRecord.ERROR_INVALID_OPERATION && read != AudioRecord.ERROR_BAD_VALUE) {
-                val num = audioData.size
                 //os?.write(audioData, 0, mMinBufferSize);
                 val dataAmplitude = arrayOfNulls<DataPoint>(num/2)
                 val dataPhase = arrayOfNulls<DataPoint>(num/2)
@@ -99,7 +99,7 @@ class GraphHandler(val graphAmplitude: GraphView, val graphPhase:GraphView, val 
                 for (i in 0 until num/2) {
                     //output_power[i] = (real_output[i] * real_output[i] + imaginary_output[i] * imaginary_output[i]) / real_output.length;
                     dataAmplitude[i] = DataPoint(i.toDouble(), toTransform[i*2+1] * toTransform[i*2+1] + toTransform[i*2] * toTransform[i*2])
-                    dataFull[i] += dataAmplitude[i]!!.y
+                    dataAmplitudeFullSignal[i] += dataAmplitude[i]!!.y
                 }
 
                 for(i in 0 until num/2) {
@@ -122,14 +122,13 @@ class GraphHandler(val graphAmplitude: GraphView, val graphPhase:GraphView, val 
             }
 
         }
-        var dataFullList = mutableListOf<DataPoint>()
-        dataGraphs.currentRecordFullFreqDomain.add(DataGraph(dataFullList))
         pointsInGraphs = audioData.size.toLong()
         numOfGraphs = index.toLong()
-        for (i in 0 until dataFull.size) {
-            dataFullList.add(DataPoint(i.toDouble(), dataFull[i]/numOfGraphs))
+        var dataFullList = mutableListOf<DataPoint>()
+        dataGraphs.currentRecordFullFreqDomain = mutableListOf(DataGraph(dataFullList))
+        for (i in 0 until num/2) {
+            dataFullList.add(DataPoint(i.toDouble(), dataAmplitudeFullSignal[i]/numOfGraphs))
         }
-        println("index::" + index)
     }
 
     fun replayGraphView(mAudioRecord:AudioRecord): Boolean {
