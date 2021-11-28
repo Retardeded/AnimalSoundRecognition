@@ -130,11 +130,11 @@ class SoundServiceHandler {
         GlobalScope.launch(Dispatchers.Main) {
             if (response.isSuccessful) {
                 textTest.text = response.toString()
-                val mostSimilarSoundsList = response.body()!!
+                val mostSimilarSoundTypesList = response.body()!!
                 var text:String = "d\n"
-                for (sound in mostSimilarSoundsList) {
-                    text += "Sound info:\n" + sound.first + "\n"
-                    text += "Correlation info:\n" + sound.second + "\n"
+                for (soundType in mostSimilarSoundTypesList) {
+                    text += "Sound Type info:\n" + soundType.first + "\n"
+                    text += "Correlation info:\n" + soundType.second + "\n"
                 }
                 textTest.text = text
             }
