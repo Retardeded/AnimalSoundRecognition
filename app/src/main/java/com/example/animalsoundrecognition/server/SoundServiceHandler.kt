@@ -35,8 +35,8 @@ class SoundServiceHandler {
         GlobalScope.launch(Dispatchers.Main) {
             if (response.isSuccessful) {
                 textTest.text = response.toString()
-                val quiz = response.body()!!
-                val stringBuilder = quiz.toString();
+                val data = response.body()!!
+                val stringBuilder = data.toString();
                 textTest.text = stringBuilder
             }
             else {
