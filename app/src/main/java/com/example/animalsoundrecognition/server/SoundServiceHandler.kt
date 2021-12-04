@@ -46,6 +46,22 @@ class SoundServiceHandler {
         }
     }
 
+    suspend fun getTypes(textTest: TextView) {
+        val response = service.getTypes()
+        GlobalScope.launch(Dispatchers.Main) {
+            if (response.isSuccessful) {
+                textTest.text = response.toString()
+                val data = response.body()!!
+                val stringBuilder = data.toString();
+                textTest.text = stringBuilder
+            }
+            else {
+                val text = "MSG:" + response.message() + "CAUSE: " + response.errorBody()
+                textTest.text = text
+            }
+        }
+    }
+
     suspend fun getSound(textTest: TextView, animalNameText: TextView, dataGraphs: DataGraphs) {
         val id = animalNameText.text.toString()
         val response = service.getSound(id)

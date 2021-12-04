@@ -14,8 +14,11 @@ import retrofit2.http.*
 
 interface SoundService {
 
-    @GET("api/sounds/soundInfo")
+    @GET("api/sounds/soundsInfo")
     suspend fun getSounds(): Response<List<DataSound>>
+
+    @GET("api/sounds/soundTypes")
+    suspend fun getTypes(): Response<List<SoundType>>
 
     @GET("api/sounds/{id}")
     suspend fun getSound( @Path("id") id:String): Response<DataSound>

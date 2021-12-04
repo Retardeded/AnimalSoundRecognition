@@ -84,8 +84,11 @@ class MainActivity : AppCompatActivity() {
                     val sound = recordHandler.createDataSound(true, animalNameText)
                     serviceHandler.checkSoundFreqDomain(textTest, sound)
                 }
-                R.id.get_sound_types -> {
+                R.id.get_sounds -> {
                     serviceHandler.getSounds(textTest)
+                }
+                R.id.get_sound_types-> {
+                    serviceHandler.getTypes(textTest)
                 }
                 R.id.get_sound -> {
                     serviceHandler.getSound(textTest, animalNameText, graphHandler.dataGraphs)
