@@ -114,6 +114,9 @@ class GraphHandler(val graphAmplitude: GraphView, val graphPhase:GraphView, val 
                 val listTime: List<DataPoint> = dataTime.toList().filterNotNull()
                 index++
                 dataGraphs.currentRecordTimeDomain.add(DataGraph(listTime))
+
+                //println(listTime)
+
                 GlobalScope.launch( Dispatchers.Main ){
                     mAmplitudeSeries!!.resetData(dataAmplitude)
                     mPhaseSeries!!.resetData(dataPhase)
@@ -122,18 +125,27 @@ class GraphHandler(val graphAmplitude: GraphView, val graphPhase:GraphView, val 
             }
 
         }
+
+        val n = dataAmplitudeFullSignal.size
+        val data = arrayOfNulls<DataPoint>(n)
+        for (i in data.indices) {
+            data[i] = DataPoint(i.toDouble(), dataAmplitudeFullSignal[i])
+        }
+        GlobalScope.launch( Dispatchers.Main ){
+            mFullFreqSeries!!.resetData(data)
+        }
+
         pointsInGraphs = audioData.size.toLong()
         numOfGraphs = index.toLong()
-        var dataFullList = mutableListOf<DataPoint>()
-        dataGraphs.currentRecordFullFreqDomain = mutableListOf(DataGraph(dataFullList))
-        for (i in 0 until num/2) {
-            dataFullList.add(DataPoint(i.toDouble(), dataAmplitudeFullSignal[i]/numOfGraphs))
-        }
+
+
     }
 
     fun replayGraphView(mAudioRecord:AudioRecord): Boolean {
         var index = 0
         val audioData = ShortArray(mMinBufferSize)
+        val num = audioData.size
+        val dataAmplitudeFullSignal = DoubleArray(num/2)
 
         while (isPlaying && index < dataGraphs.currentRecordTimeDomain.size) {
             val read = mAudioRecord!!.read(audioData, 0, mMinBufferSize)
@@ -153,6 +165,7 @@ class GraphHandler(val graphAmplitude: GraphView, val graphPhase:GraphView, val 
             for (i in 0 until numTime/2) {
                 //output_power[i] = (real_output[i] * real_output[i] + imaginary_output[i] * imaginary_output[i]) / real_output.length;
                 dataAmplitude[i] = DataPoint(i.toDouble(), toTransform[i*2+1] * toTransform[i*2+1] + toTransform[i*2] * toTransform[i*2])
+                dataAmplitudeFullSignal[i] += dataAmplitude[i]!!.y
             }
             for(i in 0 until numTime/2) {
                 dataPhase[i] = DataPoint(i.toDouble(),atan(toTransform[i*2]/toTransform[i*2+1])*180/PI)
@@ -166,17 +179,15 @@ class GraphHandler(val graphAmplitude: GraphView, val graphPhase:GraphView, val 
             index++
         }
 
-        if(dataGraphs.currentRecordFullFreqDomain.size > 0)
-        {
-            val num = dataGraphs.currentRecordFullFreqDomain[0].dataPoints.size
-            val data = arrayOfNulls<DataPoint>(num)
-            for (i in 0 until num) {
-                data[i] = dataGraphs.currentRecordFullFreqDomain[0].dataPoints[i]
-            }
-            GlobalScope.launch( Dispatchers.Main ){
-                mFullFreqSeries!!.resetData(data)
-            }
+        val n = dataAmplitudeFullSignal.size
+        val data = arrayOfNulls<DataPoint>(n)
+        for (i in data.indices) {
+            data[i] = DataPoint(i.toDouble(), dataAmplitudeFullSignal[i])
         }
+        GlobalScope.launch( Dispatchers.Main ){
+            mFullFreqSeries!!.resetData(data)
+        }
+
         return true
     }
 

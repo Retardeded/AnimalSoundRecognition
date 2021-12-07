@@ -73,7 +73,6 @@ class RecordHandler(val graphHandler: GraphHandler, val fileName:String) {
 
     fun startRecording() {
         graphHandler.dataGraphs.currentRecordTimeDomain.clear()
-        graphHandler.dataGraphs.currentRecordFullFreqDomain.clear()
         mAudioRecord = AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT,
             mMinBufferSize
         )
@@ -123,14 +122,14 @@ class RecordHandler(val graphHandler: GraphHandler, val fileName:String) {
     }
 
     fun createDataSound(includeGraph:Boolean, animalNameText: TextView): DataSound {
-        val dataPoints: MutableList<DataPoint> = mutableListOf()
         val timePoints: MutableList<DataPoint> = mutableListOf()
         if(includeGraph) {
             for (graphs in graphHandler.dataGraphs.currentRecordTimeDomain) {
                 timePoints.addAll(graphs.dataPoints)
             }
         }
-        val sound = DataSound(animalNameText.text.toString(), animalNameText.text.toString(), currentDuration, graphHandler.pointsInGraphs, graphHandler.numOfGraphs, dataPoints, timePoints)
+
+        val sound = DataSound(animalNameText.text.toString(), timePoints.take(3).toString(), currentDuration, graphHandler.pointsInGraphs, graphHandler.numOfGraphs, timePoints)
         return sound
     }
 
