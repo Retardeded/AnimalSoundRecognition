@@ -76,13 +76,17 @@ class MainActivity : AppCompatActivity() {
                     val sound = recordHandler.createDataSound(true, animalNameText)
                     serviceHandler.postSound(textTest, sound)
                 }
-                R.id.check_sound -> {
+                R.id.check_sound_time -> {
                     val sound = recordHandler.createDataSound(true, animalNameText)
-                    serviceHandler.checkSound(textTest, sound)
+                    serviceHandler.checkSoundTimeDomain(textTest, sound)
                 }
                 R.id.check_sound_freq -> {
                     val sound = recordHandler.createDataSound(true, animalNameText)
-                    serviceHandler.checkSoundFreqDomain(textTest, sound)
+                    serviceHandler.checkSoundFrequencyDomain(textTest, sound)
+                }
+                R.id.check_sound_power -> {
+                    val sound = recordHandler.createDataSound(true, animalNameText)
+                    serviceHandler.checkSoundPowerSpectrum(textTest, sound)
                 }
                 R.id.get_sounds -> {
                     serviceHandler.getSounds(textTest)

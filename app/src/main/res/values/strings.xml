@@ -53,13 +53,13 @@
         ]]>
     </string>
     <string name="device_access_mic_recorded">Play Sound</string>
-    <string name="check_sound">Check Sound</string>
     <string name="device_access_audio_stop">Stop Playing</string>
     <string name="upload_new_animal">Upload New Animal</string>
-    <string name="check_animal">Recognize Animal</string>
     <string name="get_sounds">Get Sounds</string>
     <string name="get_sound">Get Sound(type correct id)</string>
     <string name="delete_sound">Remove Sound(type correct id)</string>
-    <string name="check_animal_freq">Recognize Animal(Freq domain)</string>
+    <string name="check_sound_freq">Recognize Animal(Freq domain)</string>
+    <string name="check_sound_time">Recognize Animal(Time domain)</string>
+    <string name="check_sound_power">Recognize Animal(Power Spectrum)</string>
     <string name="get_types">Get Sound Types</string>
 </resources>

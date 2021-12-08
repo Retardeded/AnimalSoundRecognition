@@ -138,9 +138,9 @@ class SoundServiceHandler {
         }
     }
 
-    suspend fun checkSound(textTest: TextView, dataSound:DataSound) {
+    suspend fun checkSoundTimeDomain(textTest: TextView, dataSound:DataSound) {
         val sound = dataSound
-        val response = service.checkSound(sound)
+        val response = service.checkSoundTimeDomain(sound)
         GlobalScope.launch(Dispatchers.Main) {
             if (response.isSuccessful) {
                 textTest.text = response.toString()
@@ -159,9 +159,9 @@ class SoundServiceHandler {
         }
     }
 
-    suspend fun checkSoundFreqDomain(textTest: TextView, dataSound:DataSound) {
+    suspend fun checkSoundPowerSpectrum(textTest: TextView, dataSound:DataSound) {
         val sound = dataSound
-        val response = service.checkSoundFreqDomain(sound)
+        val response = service.checkSoundPowerSpectrum(sound)
         GlobalScope.launch(Dispatchers.Main) {
             if (response.isSuccessful) {
                 textTest.text = response.toString()
@@ -170,6 +170,27 @@ class SoundServiceHandler {
                 for (sound in mostSimilarSoundsList) {
                     text += "Sound info:\n" + sound.first + "\n"
                     text += "Correlation info:\n" + sound.second + "\n"
+                }
+                textTest.text = text
+            }
+            else {
+                val text = "MSG:" + response.message() + "CAUSE: " + response.errorBody()
+                textTest.text = text
+            }
+        }
+    }
+
+    suspend fun checkSoundFrequencyDomain(textTest: TextView, dataSound:DataSound) {
+        val sound = dataSound
+        val response = service.checkSoundFrequencyDomain(sound)
+        GlobalScope.launch(Dispatchers.Main) {
+            if (response.isSuccessful) {
+                textTest.text = response.toString()
+                val mostSimilarSoundTypesList = response.body()!!
+                var text:String = "d\n"
+                for (soundType in mostSimilarSoundTypesList) {
+                    text += "Sound Type info:\n" + soundType.first + "\n"
+                    text += "Correlation info:\n" + soundType.second + "\n"
                 }
                 textTest.text = text
             }

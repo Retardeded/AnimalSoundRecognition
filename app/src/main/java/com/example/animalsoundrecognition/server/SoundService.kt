@@ -1,9 +1,6 @@
 package com.example.animalsoundrecognition.server
 
-import com.example.animalsoundrecognition.model.DataSound
-import com.example.animalsoundrecognition.model.SoundType
-import com.example.animalsoundrecognition.model.PowerSpectrumCoefficient
-import com.example.animalsoundrecognition.model.SoundsTimeCoefficients
+import com.example.animalsoundrecognition.model.*
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Headers
@@ -32,11 +29,15 @@ interface SoundService {
 
     @Headers("Content-Type: application/json")
     @POST("api/sounds/checkTime")
-    suspend fun checkSound(@Body sound: DataSound): Response<List<Pair<SoundType, SoundsTimeCoefficients>>>
+    suspend fun checkSoundTimeDomain(@Body sound: DataSound): Response<List<Pair<SoundType, SoundsTimeCoefficients>>>
 
     @Headers("Content-Type: application/json")
     @POST("api/sounds/checkPowerSpectrum")
-    suspend fun checkSoundFreqDomain(@Body sound: DataSound): Response<List<Pair<SoundType, PowerSpectrumCoefficient>>>
+    suspend fun checkSoundPowerSpectrum(@Body sound: DataSound): Response<List<Pair<SoundType, PowerSpectrumCoefficient>>>
+
+    @Headers("Content-Type: application/json")
+    @POST("api/sounds/checkFrequency")
+    suspend fun checkSoundFrequencyDomain(@Body sound: DataSound): Response<List<Pair<SoundType, SoundsFreqCoefficients>>>
 
 
 }
