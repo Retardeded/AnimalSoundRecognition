@@ -17,11 +17,10 @@ import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.atan
 
-class GraphHandler(val graphAmplitude: GraphView, val graphPhase:GraphView, val graphTime: GraphView, val graphFreqFull: GraphView) {
+class GraphHandler(val graphAmplitude: GraphView, val graphTime: GraphView, val graphFreqFull: GraphView) {
     var dataGraphs: DataGraphs = DataGraphs()
     var mFullFreqSeries: BaseSeries<DataPoint>? = null
     var mAmplitudeSeries: BaseSeries<DataPoint>? = null
-    var mPhaseSeries: BaseSeries<DataPoint>? = null
     var mTimeSeries: BaseSeries<DataPoint>? = null
     var pointsInGraphs: Long = 0
     var numOfGraphs: Long = 0
@@ -40,12 +39,6 @@ class GraphHandler(val graphAmplitude: GraphView, val graphPhase:GraphView, val 
         graphAmplitude.viewport.setMinY(-375000.0)
         graphAmplitude.viewport.isYAxisBoundsManual = true
 
-        mPhaseSeries = LineGraphSeries<DataPoint>(arrayOf<DataPoint>())
-        graphPhase.title = "Frequency Domain Phase"
-        graphPhase.viewport.setMaxY(500.0)
-        graphPhase.viewport.setMinY(-500.0)
-        graphPhase.viewport.isYAxisBoundsManual = true
-
         graphFreqFull.title = "Full Signal Frequency Domain"
         mFullFreqSeries = LineGraphSeries<DataPoint>(arrayOf<DataPoint>())
         graphFreqFull.viewport.setMaxY(250000.0)
@@ -61,11 +54,6 @@ class GraphHandler(val graphAmplitude: GraphView, val graphPhase:GraphView, val 
             graphAmplitude.removeAllSeries()
         }
         graphAmplitude.addSeries(mAmplitudeSeries)
-
-        if (graphPhase.series.count() > 0) {
-            graphPhase.removeAllSeries()
-        }
-        graphPhase.addSeries(mPhaseSeries)
 
         if (graphFreqFull.series.count() > 0) {
             graphFreqFull.removeAllSeries()
@@ -83,7 +71,6 @@ class GraphHandler(val graphAmplitude: GraphView, val graphPhase:GraphView, val 
             if (read != AudioRecord.ERROR_INVALID_OPERATION && read != AudioRecord.ERROR_BAD_VALUE) {
                 //os?.write(audioData, 0, mMinBufferSize);
                 val dataAmplitude = arrayOfNulls<DataPoint>(num/2)
-                val dataPhase = arrayOfNulls<DataPoint>(num/2)
                 val dataTime = arrayOfNulls<DataPoint>(num)
                 // apply Fast Fourier Transform here
                 transformer = RealDoubleFFT(num)
@@ -102,10 +89,6 @@ class GraphHandler(val graphAmplitude: GraphView, val graphPhase:GraphView, val 
                     dataAmplitudeFullSignal[i] += dataAmplitude[i]!!.y
                 }
 
-                for(i in 0 until num/2) {
-                    dataPhase[i] = DataPoint(i.toDouble(),atan(toTransform[i*2]/toTransform[i*2+1])*180/PI)
-                }
-
                 for (i in 0 until num) {
                     dataTime[i] = DataPoint(i.toDouble(), audioData[i].toDouble())
                 }
@@ -119,22 +102,13 @@ class GraphHandler(val graphAmplitude: GraphView, val graphPhase:GraphView, val 
 
                 GlobalScope.launch( Dispatchers.Main ){
                     mAmplitudeSeries!!.resetData(dataAmplitude)
-                    mPhaseSeries!!.resetData(dataPhase)
                     mTimeSeries!!.resetData(dataTime)
                 }
             }
 
         }
 
-        val n = dataAmplitudeFullSignal.size
-        val data = arrayOfNulls<DataPoint>(n)
-        for (i in data.indices) {
-            data[i] = DataPoint(i.toDouble(), dataAmplitudeFullSignal[i])
-        }
-        GlobalScope.launch( Dispatchers.Main ){
-            mFullFreqSeries!!.resetData(data)
-        }
-
+        visualizePowerSpectrum(dataAmplitudeFullSignal, index)
         pointsInGraphs = audioData.size.toLong()
         numOfGraphs = index.toLong()
 
@@ -152,7 +126,6 @@ class GraphHandler(val graphAmplitude: GraphView, val graphPhase:GraphView, val 
             val numTime =  dataGraphs.currentRecordTimeDomain[index].dataPoints.size
             val dataTime = arrayOfNulls<DataPoint>(numTime)
             val dataAmplitude = arrayOfNulls<DataPoint>(numTime/2)
-            val dataPhase = arrayOfNulls<DataPoint>(numTime/2)
             for (i in 0 until numTime) {
                 dataTime[i] = dataGraphs.currentRecordTimeDomain[index].dataPoints[i]
             }
@@ -167,28 +140,27 @@ class GraphHandler(val graphAmplitude: GraphView, val graphPhase:GraphView, val 
                 dataAmplitude[i] = DataPoint(i.toDouble(), toTransform[i*2+1] * toTransform[i*2+1] + toTransform[i*2] * toTransform[i*2])
                 dataAmplitudeFullSignal[i] += dataAmplitude[i]!!.y
             }
-            for(i in 0 until numTime/2) {
-                dataPhase[i] = DataPoint(i.toDouble(),atan(toTransform[i*2]/toTransform[i*2+1])*180/PI)
-            }
 
             GlobalScope.launch( Dispatchers.Main ){
                 mTimeSeries!!.resetData(dataTime)
                 mAmplitudeSeries!!.resetData(dataAmplitude)
-                mPhaseSeries!!.resetData(dataPhase)
             }
             index++
         }
 
+        visualizePowerSpectrum(dataAmplitudeFullSignal, index)
+        return true
+    }
+
+    private fun visualizePowerSpectrum(dataAmplitudeFullSignal: DoubleArray, index: Int) {
         val n = dataAmplitudeFullSignal.size
         val data = arrayOfNulls<DataPoint>(n)
         for (i in data.indices) {
-            data[i] = DataPoint(i.toDouble(), dataAmplitudeFullSignal[i])
+            data[i] = DataPoint(i.toDouble(), dataAmplitudeFullSignal[i] / index)
         }
-        GlobalScope.launch( Dispatchers.Main ){
+        GlobalScope.launch(Dispatchers.Main) {
             mFullFreqSeries!!.resetData(data)
         }
-
-        return true
     }
 
 }

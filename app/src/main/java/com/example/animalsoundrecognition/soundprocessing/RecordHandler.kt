@@ -129,7 +129,7 @@ class RecordHandler(val graphHandler: GraphHandler, val fileName:String) {
             }
         }
 
-        val sound = DataSound(animalNameText.text.toString(), timePoints.take(3).toString(), currentDuration, graphHandler.pointsInGraphs, graphHandler.numOfGraphs, timePoints)
+        val sound = DataSound(animalNameText.text.toString(), animalNameText.text.toString(), currentDuration, graphHandler.pointsInGraphs, graphHandler.numOfGraphs, timePoints)
         return sound
     }
 

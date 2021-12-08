@@ -3,7 +3,7 @@ package com.example.animalsoundrecognition.model
 class DataSoundParameters(val typeName:String, val signalEnvelope:List<Integer>,
                           val rootMeanSquareEnergy:List<Integer>, val zeroCrossingDensity:Integer,
                           val powerSpectrum:List<Integer>, val spectralCentroids:List<Integer>,
-                          val spectralFluxes:List<Integer>, val spectralRollOffPoints:List<Integer>) {
+                          val spectralFluxes:List<Integer>, val spectralRollOffPoints:List<Double>) {
     override fun toString(): String {
         return "Params(zeroCrossingDensity=$zeroCrossingDensity \n" +
                 "signalEnvelope=$signalEnvelope \n " +
