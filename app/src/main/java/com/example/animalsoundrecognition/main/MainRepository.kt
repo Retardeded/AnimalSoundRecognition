@@ -1,20 +1,21 @@
-package com.example.animalsoundrecognition.server
+package com.example.animalsoundrecognition.main
 
 import com.example.animalsoundrecognition.model.*
-import retrofit2.http.Body
-import retrofit2.http.GET
-import retrofit2.http.Headers
-import retrofit2.http.POST
+import com.example.animalsoundrecognition.util.Resource
 import retrofit2.Response
 import retrofit2.http.*
 
+interface MainRepository {
 
-interface SoundService {
+    suspend fun getSounds(): Resource<List<DataSound>>
 
-    @GET("api/sounds/soundsInfo")
-    suspend fun getSounds(): Response<List<DataSound>>
+    //suspend fun postSound(sound: DataSound): Resource<DataSound>
+
+
 
     /*
+    //@GET("api/sounds/soundsInfo")
+    //suspend fun getSounds(): Response<List<DataSound>>
 
     @GET("api/sounds/soundTypes")
     suspend fun getTypes(): Response<List<SoundType>>
@@ -42,6 +43,4 @@ interface SoundService {
     suspend fun checkSoundFrequencyDomain(@Body sound: DataSound): Response<List<Pair<SoundType, SoundsFreqCoefficients>>>
 
      */
-
-
 }

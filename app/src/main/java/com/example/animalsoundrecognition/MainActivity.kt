@@ -1,22 +1,24 @@
 package com.example.animalsoundrecognition
 
-import android.media.*
+import android.graphics.Color
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuItem
-import android.widget.EditText
-import android.widget.TextView
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import com.example.animalsoundrecognition.server.SoundServiceHandler
-import com.example.animalsoundrecognition.soundprocessing.GraphHandler
-import com.example.animalsoundrecognition.soundprocessing.RecordHandler
-import com.example.animalsoundrecognition.soundprocessing.RecordHandler.Companion.isPlaying
-import com.example.animalsoundrecognition.soundprocessing.RecordHandler.Companion.isRecording
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
+import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
+import com.example.animalsoundrecognition.databinding.ActivityMainBinding
+import com.example.animalsoundrecognition.main.MainViewModel
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collect
 
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
+
+
+    lateinit var binding: ActivityMainBinding
+    val viewModel: MainViewModel by viewModels()
+
+    /*
 
     lateinit var recordHandler:RecordHandler
     lateinit var serviceHandler:SoundServiceHandler
@@ -25,18 +27,48 @@ class MainActivity : AppCompatActivity() {
     lateinit var textTest:TextView
     lateinit var animalNameText:EditText
 
+     */
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        lifecycleScope.launchWhenStarted {
+            viewModel.conversion.collect { event ->
+                when(event) {
+                    is MainViewModel.SoundEvent.Success -> {
+                        binding.progressBar.isVisible = false
+                        binding.tvResult.setTextColor(Color.BLACK)
+                        binding.tvResult.text = event.resultText
+                    }
+                    is MainViewModel.SoundEvent.Failure -> {
+                        binding.progressBar.isVisible = false
+                        binding.tvResult.setTextColor(Color.RED)
+                        binding.tvResult.text = event.errorText
+                    }
+                    is MainViewModel.SoundEvent.Loading -> {
+                        binding.progressBar.isVisible = true
+                    }
+                    else -> Unit
+                }
+            }
+        }
+
+
+        /*
         animalNameText = findViewById(R.id.textAnimalName)
-        textTest = findViewById(R.id.textTest)
+        textTest = findViewById(R.id.tvResult)
         textTest.text = "DEFAULT"
         serviceHandler = SoundServiceHandler()
         graphHandler = GraphHandler(findViewById(R.id.graphAplitude), findViewById(R.id.graphTime), findViewById(R.id.graphFreqFull))
         recordHandler = RecordHandler(graphHandler, "${externalCacheDir?.absolutePath}/audiorecordtest.3gp")
+
+         */
     }
 
+    /*
     override fun onStart() {
         super.onStart()
         graphHandler.initGraphView()
@@ -47,7 +79,11 @@ class MainActivity : AppCompatActivity() {
         recordHandler.stopRecording()
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+     */
+
+
+    /*
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.main, menu)
         return super.onCreateOptionsMenu(menu)
     }
@@ -89,7 +125,8 @@ class MainActivity : AppCompatActivity() {
                     serviceHandler.checkSoundPowerSpectrum(textTest, sound)
                 }
                 R.id.get_sounds -> {
-                    serviceHandler.getSounds(textTest)
+                    viewModel.convert(textTest.text.toString())
+                    //serviceHandler.getSounds(textTest)
                 }
                 R.id.get_sound_types-> {
                     serviceHandler.getTypes(textTest)
@@ -136,5 +173,7 @@ class MainActivity : AppCompatActivity() {
         option.isEnabled = status
         option.isVisible = status
     }
+
+     */
 
 }
